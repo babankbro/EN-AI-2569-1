@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Learning: Regression vs Classification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- MathJax for rendering equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+    <nav class="navbar glass">
+        <div class="container nav-content">
+            <div class="logo">ML <span>Journey</span></div>
+            <ul class="nav-links">
+                <li><a href="#intro">บทนำ</a></li>
+                <li><a href="#comparison">เปรียบเทียบ</a></li>
+                <li><a href="#regression">Regression</a></li>
+                <li><a href="#classification">Classification</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header class="hero" id="home">
+        <div class="hero-bg" style="background-image: url('images/hero.jpg');"></div>
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <span class="badge">Supervised Learning</span>
+            <h1>เจาะลึกความแตกต่าง<br><span class="text-gradient">Regression & Classification</span></h1>
+            <p>คู่มือทำความเข้าใจระบบ Machine Learning แบบมีผู้สอน ตั้งแต่ทฤษฎีพื้นฐานไปจนถึงตัวอย่างการเขียนโค้ด Python</p>
+            <a href="#intro" class="btn btn-primary">เริ่มต้นเรียนรู้</a>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="intro" class="section fade-in">
+            <h2 class="section-title">1. บทนำ (Introduction)</h2>
+            <div class="card glass-card">
+                <p>ในยุคที่ข้อมูลมีปริมาณมหาศาล (Big Data) ปัญญาประดิษฐ์ (Artificial Intelligence) และ <strong>การเรียนรู้ของเครื่อง (Machine Learning)</strong> ได้เข้ามามีบทบาทสำคัญในการวิเคราะห์และดึงมูลค่าจากข้อมูลเหล่านั้น</p>
+                <p>หนึ่งในแขนงที่สำคัญที่สุดคือ <strong>การเรียนรู้แบบมีผู้สอน (Supervised Learning)</strong> ซึ่งโมเดลจะเรียนรู้จากชุดข้อมูลที่มีการระบุคำตอบที่ถูกต้องไว้แล้ว (Labeled Data) เพื่อสร้างกฎหรือสมการในการทำนายผลลัพธ์ของข้อมูลใหม่ที่ไม่เคยเห็นมาก่อน</p>
+                <div class="highlight-box">
+                    <h3>Supervised Learning แบ่งออกเป็น 2 ประเภทหลัก:</h3>
+                    <ul>
+                        <li><span class="highlight-coral">Regression</span> (การวิเคราะห์การถดถอย): ใช้ทำนายผลลัพธ์ที่เป็น <strong>ตัวเลขต่อเนื่อง (Continuous Values)</strong></li>
+                        <li><span class="highlight-cyan">Classification</span> (การจำแนกประเภท): ใช้ทำนายผลลัพธ์ที่เป็น <strong>หมวดหมู่หรือกลุ่ม (Discrete Categories/Labels)</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison" class="section fade-in">
+            <h2 class="section-title">2. เปรียบเทียบความแตกต่าง</h2>
+            <div class="compare-container">
+                <div class="compare-image">
+                    <img src="images/compare.jpg" alt="Comparison Concept" class="img-fluid rounded">
+                </div>
+                <div class="compare-table-wrapper card glass-card">
+                    <table class="compare-table">
+                        <thead>
+                            <tr>
+                                <th>หัวข้อ</th>
+                                <th class="col-reg">Regression (การถดถอย)</th>
+                                <th class="col-cls">Classification (การจำแนกประเภท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>ลักษณะของผลลัพธ์ (Output)</strong></td>
+                                <td>เป็นตัวเลขที่ต่อเนื่อง (Continuous)<br><em>เช่น 1.5, 100.5, 5000</em></td>
+                                <td>เป็นหมวดหมู่ (Categorical/Discrete)<br><em>เช่น ใช่/ไม่ใช่, หมา/แมว</em></td>
+                            </tr>
+                            <tr>
+                                <td><strong>เป้าหมายของโมเดล</strong></td>
+                                <td>หาเส้นแนวโน้ม (Best-fit line) ที่ใกล้เคียงกับจุดข้อมูลมากที่สุด</td>
+                                <td>หาเส้นแบ่งเขตแดน (Decision Boundary) เพื่อแยกกลุ่มข้อมูล</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ตัวอย่างปัญหา</strong></td>
+                                <td>ทำนายราคาบ้าน, อุณหภูมิ, ยอดขาย</td>
+                                <td>ตรวจจับอีเมลขยะ, วินิจฉัยโรค, จำแนกชนิดสัตว์</td>
+                            </tr>
+                            <tr>
+                                <td><strong>ฟังก์ชันประเมินผลหลัก</strong></td>
+                                <td>MSE, RMSE, MAE, \(R^2\)</td>
+                                <td>Accuracy, Precision, Recall, F1-Score</td>
+                            </tr>
+                            <tr>
+                                <td><strong>อัลกอริทึมที่นิยม</strong></td>
+                                <td>Linear Regression, Ridge/Lasso, SVR</td>
+                                <td>Logistic Regression, Decision Tree, SVM, Naive Bayes</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="regression" class="section fade-in">
+            <h2 class="section-title">3. การวิเคราะห์การถดถอย (Regression)</h2>
+            
+            <div class="grid-2">
+                <div class="card glass-card">
+                    <h3>แนวคิดและหลักการ</h3>
+                    <p>เป้าหมายหลักคือการสร้างสมการทางคณิตศาสตร์ที่สามารถอธิบายความสัมพันธ์ระหว่างตัวแปรต้น (Features - \(X\)) กับตัวแปรตาม (Target - \(y\))</p>
+                    <div class="math-box">
+                        <p><strong>Simple Linear Regression:</strong></p>
+                        $$ y = \beta_0 + \beta_1 x + \epsilon $$
+                    </div>
+                    <ul>
+                        <li>\(y\) คือ ตัวแปรตามที่ต้องการทำนาย</li>
+                        <li>\(x\) คือ ตัวแปรต้นหรือฟีเจอร์</li>
+                        <li>\(\beta_0\) คือ จุดตัดแกน Y (Intercept)</li>
+                        <li>\(\beta_1\) คือ ความชันของเส้นตรง (Slope / Weight)</li>
+                        <li>\(\epsilon\) คือ ค่าความคลาดเคลื่อน (Error term)</li>
+                    </ul>
+                </div>
+
+                <div class="card glass-card">
+                    <h3>ตัวชี้วัดประสิทธิภาพ (Metrics)</h3>
+                    <ul>
+                        <li><strong>MAE (Mean Absolute Error):</strong> ค่าเฉลี่ยของความคลาดเคลื่อนสัมบูรณ์</li>
+                        <li><strong>MSE (Mean Squared Error):</strong> ค่าเฉลี่ยของความคลาดเคลื่อนกำลังสอง (ลงโทษค่าที่ผิดพลาดสูง)</li>
+                        <li><strong>RMSE (Root Mean Squared Error):</strong> รากที่สองของ MSE ทำให้หน่วยกลับมาเท่าเป้าหมาย</li>
+                        <li><strong>\(R^2\) (R-squared):</strong> สัมประสิทธิ์การตัดสินใจ (0 ถึง 1 ยิ่งใกล้ 1 ยิ่งดี)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="code-section card glass-card mt-4">
+                <div class="code-header">
+                    <span>Python Code: Linear Regression (ทำนายราคาบ้าน)</span>
+                    <button class="copy-btn" data-clipboard-target="#code-reg">Copy</button>
+                </div>
+                <pre><code id="code-reg" class="language-python">
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn import metrics
+
+# 1. สร้างชุดข้อมูลจำลอง
+np.random.seed(42)
+X = 50 + 150 * np.random.rand(100, 1) # พื้นที่บ้าน (50-200 ตร.ม.)
+y = 5 + 0.15 * X + np.random.randn(100, 1) * 3 # ราคาบ้าน
+
+# 2. แบ่งข้อมูล
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 3. สร้างและฝึกสอนโมเดล
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+# 4. ทำนายผลลัพธ์
+y_pred = model.predict(X_test)
+
+# 5. ประเมินประสิทธิภาพ
+print(f"R-squared: {metrics.r2_score(y_test, y_pred):.2f}")
+                </code></pre>
+            </div>
+        </section>
+
+        <section id="classification" class="section fade-in">
+            <h2 class="section-title">4. การจำแนกประเภท (Classification)</h2>
+            
+            <div class="grid-2">
+                <div class="card glass-card">
+                    <h3>แนวคิดและหลักการ</h3>
+                    <p>กระบวนการจัดกลุ่มข้อมูลออกเป็นหมวดหมู่ (Classes) ที่กำหนดไว้ล่วงหน้า โมเดลจะพยายามวาด <strong>เส้นแบ่งเขตแดน (Decision Boundary)</strong> ออกจากกัน</p>
+                    <p><strong>Logistic Regression:</strong> ใช้นำสมการเส้นตรงมาครอบด้วย Sigmoid Function เพื่อบีบผลลัพธ์ให้อยู่ในช่วง 0 ถึง 1 (ความน่าจะเป็น)</p>
+                    <div class="math-box">
+                        <p><strong>Sigmoid Function:</strong></p>
+                        $$ \sigma(z) = \frac{1}{1 + e^{-z}} $$
+                    </div>
+                </div>
+
+                <div class="card glass-card">
+                    <h3>ตัวชี้วัดประสิทธิภาพ (Metrics)</h3>
+                    <p>ประเมินจาก <strong>Confusion Matrix</strong>:</p>
+                    <ul>
+                        <li><strong>Accuracy:</strong> สัดส่วนของการทายถูกทั้งหมด</li>
+                        <li><strong>Precision:</strong> ทายว่า "จริง" ถูกต้องจริงๆ เท่าไร (สำคัญเมื่อ FP ส่งผลเสียรุนแรง)</li>
+                        <li><strong>Recall / Sensitivity:</strong> จากของที่ "จริง" ทั้งหมด หาเจอเท่าไร (สำคัญเมื่อ FN ส่งผลเสียรุนแรง เช่น ตรวจโรค)</li>
+                        <li><strong>F1-Score:</strong> ค่าเฉลี่ยฮาร์มอนิกของ Precision และ Recall</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="code-section card glass-card mt-4">
+                <div class="code-header">
+                    <span>Python Code: Logistic Regression (วินิจฉัยโรคมะเร็ง)</span>
+                    <button class="copy-btn" data-clipboard-target="#code-cls">Copy</button>
+                </div>
+                <pre><code id="code-cls" class="language-python">
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
+
+# 1. โหลดข้อมูลมะเร็งเต้านม
+data = load_breast_cancer()
+X = data.data[:, :2] # เลือกมา 2 ฟีเจอร์เพื่อให้ง่าย
+y = data.target # 0=Malignant, 1=Benign
+
+# 2. แบ่งข้อมูล
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
+
+# 3. สร้างและฝึกสอนโมเดล
+classifier = LogisticRegression(random_state=42)
+classifier.fit(X_train, y_train)
+
+# 4. ทำนายผลลัพธ์
+y_pred = classifier.predict(X_test)
+
+# 5. ประเมินประสิทธิภาพ
+print(metrics.classification_report(y_test, y_pred, target_names=['Malignant', 'Benign']))
+                </code></pre>
+            </div>
+        </section>
+
+        <section id="preprocessing" class="section fade-in">
+            <h2 class="section-title">5. การเตรียมข้อมูล (Data Preprocessing)</h2>
+            <div class="card glass-card">
+                <p>ขั้นตอนที่ขาดไม่ได้ก่อนนำข้อมูลเข้าโมเดล:</p>
+                <ol class="feature-list">
+                    <li><strong>การจัดการข้อมูลที่ขาดหาย (Handling Missing Values):</strong> เติมเต็มค่าว่างด้วยค่าเฉลี่ย (Mean), มัธยฐาน (Median), หรือลบทิ้ง</li>
+                    <li><strong>การแปลงข้อมูลหมวดหมู่เป็นตัวเลข (Encoding Categorical Data):</strong> แปลงข้อความเช่น 'สีแดง' เป็นรูปแบบตัวเลข เช่น One-Hot Encoding</li>
+                    <li><strong>การปรับสเกลข้อมูล (Feature Scaling):</strong> โมเดลส่วนใหญ่อ่อนไหวต่อขนาดข้อมูล จึงต้องทำ Standardization (Mean=0, Std=1) หรือ Normalization (0 ถึง 1)
+                        <div class="math-box sm-math mt-2">
+                            $$ X_{standardized} = \frac{X - \mu}{\sigma} $$
+                        </div>
+                    </li>
+                </ol>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <div class="container text-center">
+            <h3>บทสรุป (Conclusion)</h3>
+            <p>การเลือกใช้ระหว่าง <strong>Regression</strong> และ <strong>Classification</strong> ขึ้นอยู่กับ "คำถามทางธุรกิจ" และ "ประเภทของเป้าหมาย"</p>
+            <p>ต้องการรู้เชิงปริมาณ ("เท่าไหร่?") -> <span class="highlight-coral">Regression</span> | ต้องการรู้หมวดหมู่ ("แบบไหน?") -> <span class="highlight-cyan">Classification</span></p>
+            <p class="mt-4 opacity-70">© 2026 Machine Learning Knowledge Base. Created with Antigravity.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
