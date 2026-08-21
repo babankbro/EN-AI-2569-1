@@ -10,6 +10,7 @@
 *การทำนายผลลัพธ์ที่เป็นหมวดหมู่ (Categories/Classes)*
 - **ตัวอย่างการประยุกต์ใช้:**
   - [[Image Classification]] (การแยกประเภทภาพ)
+  - [[Classification_MNIST|การแยกประเภทตัวเลขที่เขียนด้วยลายมือ (MNIST Dataset)]]
   - [[Customer Retention]] (การวิเคราะห์การรักษาลูกค้า/Churn)
   - [[Identity Fraud Detection]] (การตรวจจับการปลอมแปลงตัวตน)
   - [[Diagnostics]] (การวินิจฉัยทางการแพทย์)
@@ -18,6 +19,7 @@
 *การทำนายผลลัพธ์ที่เป็นตัวเลขต่อเนื่อง (Continuous Values)*
 - **ตัวอย่างการประยุกต์ใช้:**
   - [[Advertising Popularity Prediction]] (การทำนายความนิยมของโฆษณา)
+  - [[Regression_California_Housing|การทำนายราคาบ้าน (California Housing Dataset)]]
   - [[Weather Forecasting]] (การพยากรณ์อากาศ)
   - [[Market Forecasting]] (การพยากรณ์ตลาด/ราคาหุ้น)
   - [[Estimating life expectancy]] (การประเมินอายุขัย)
