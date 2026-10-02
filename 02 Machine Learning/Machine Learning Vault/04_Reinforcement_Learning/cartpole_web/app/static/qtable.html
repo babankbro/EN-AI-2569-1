@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Q-Table Lab</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #667085; --line: #e3e6eb;
+    --accent: #2563eb; --cart: #334155; --pole: #d97706; --good: #16a34a; --bad: #dc2626; --warn: #b45309;
+    --hl: #7c3aed;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1218; --panel: #171b23; --text: #e6e9ef; --muted: #98a2b3; --line: #2a303b;
+      --accent: #60a5fa; --cart: #cbd5e1; --pole: #f59e0b; --good: #4ade80; --bad: #f87171; --warn: #fbbf24;
+      --hl: #c084fc;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .nav a { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13px; }
+  .nav a.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; }
+  .card h2 small { color: var(--muted); font-weight: normal; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .full { margin-top: 16px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+  button, select, input[type=number] { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--bg); color: var(--text); font: inherit; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=number] { width: 84px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; display: block; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 5px 6px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .binbar { display: flex; gap: 2px; }
+  .binbar span { flex: 1; height: 12px; border-radius: 2px; background: var(--line); }
+  .binbar span.on { background: var(--hl); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .explore { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .exploit { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .qbars { margin-top: 10px; }
+  .qbar { display: grid; grid-template-columns: 110px 1fr 70px; gap: 8px; align-items: center; margin: 6px 0; font-size: 13px; }
+  .qbar .track { height: 14px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .qbar .fill { height: 100%; background: var(--accent); }
+  .qbar.chosen .fill { background: var(--hl); }
+  .qbar.chosen { font-weight: 600; }
+  .eq { font-family: "Cambria Math", "STIX Two Math", Cambria, Georgia, serif; font-size: 19px; line-height: 2; overflow-x: auto; }
+  .eq .line { white-space: nowrap; }
+  .eq .lbl { font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); display: inline-block; min-width: 170px; }
+  .v { padding: 0 4px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+  .v-old { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .v-a { background: color-mix(in srgb, var(--warn) 16%, transparent); }
+  .v-r { background: color-mix(in srgb, var(--good) 16%, transparent); }
+  .v-g { background: color-mix(in srgb, var(--pole) 16%, transparent); }
+  .v-m { background: color-mix(in srgb, var(--hl) 16%, transparent); }
+  .v-new { background: var(--hl); color: #fff; font-weight: 700; }
+  .explain { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .heatwrap { overflow-x: auto; }
+  .heat { display: grid; grid-template-columns: 74px repeat(12, minmax(42px, 1fr)); gap: 2px; font-size: 11px; min-width: 600px; }
+  .heat .hd { color: var(--muted); text-align: center; padding: 2px 0; font-variant-numeric: tabular-nums; }
+  .heat .rh { color: var(--muted); text-align: right; padding-right: 6px; align-self: center; font-variant-numeric: tabular-nums; }
+  .cell { position: relative; height: 38px; border-radius: 3px; display: flex; flex-direction: column; align-items: center;
+          justify-content: center; cursor: pointer; border: 2px solid transparent; font-variant-numeric: tabular-nums; }
+  .cell .arr { font-size: 14px; line-height: 1; }
+  .cell .val { font-size: 10px; opacity: .85; }
+  .cell.cur { border-color: var(--hl); }
+  .cell.nxt { border: 2px dashed var(--text); }
+  .cell.flash { animation: flash .6s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 4px var(--hl); } to { box-shadow: 0 0 0 0 transparent; } }
+  .slices { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; font-size: 13px; }
+  .slices button { padding: 4px 8px; font-size: 12px; }
+  .slices button.on { border-color: var(--hl); color: var(--hl); font-weight: 600; }
+  .slices button.here::after { content: " ●"; color: var(--hl); }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 10px; align-items: center; }
+  .grad { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: middle;
+          background: linear-gradient(90deg, var(--panel), var(--accent)); border: 1px solid var(--line); }
+  #cellinfo { font-size: 13px; margin-top: 8px; min-height: 20px; }
+  .log td:nth-child(n+4) { text-align: right; }
+  .pos { color: var(--good); } .neg { color: var(--bad); }
+  .muted { color: var(--muted); }
+  #status { font-size: 12px; } .ok { color: var(--good); } .err { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav"><a href="/">🏠 หน้ารวม</a><a href="/cartpole">CartPole</a><a class="on" href="/qtable">CartPole Q-Table Lab</a><a href="/maze">Maze DQN</a><a href="/atari">Atari DQN</a></nav>
+  <h1>Q-Table Lab: ดู Q-Learning ทำงานทีละ step</h1>
+  <p class="sub">ทุก step: สังเกต state → แบ่งเป็น bin → เลือก action ด้วย ε-greedy → แทนค่าในสมการ Bellman → Q-table ถูก update
+    · <span id="status">connecting…</span></p>
+
+  <div class="card">
+    <div class="toolbar">
+      <label for="source" class="muted" style="font-size:13px">เริ่มจาก</label>
+      <select id="source">
+        <option value="scratch">Q-table ว่าง (ทุกช่อง = 0)</option>
+        <option value="pretrained">Q-table ที่ฝึกแล้ว (pretrained)</option>
+      </select>
+      <button id="reset">Reset</button>
+      <span class="sep"></span>
+      <button class="primary" id="step">Step ▶|</button>
+      <button id="play">Play ▶</button>
+      <label class="muted" style="font-size:13px">ความเร็ว <b id="fps-val">5</b> step/s
+        <input type="range" id="fps" min="1" max="60" value="5" style="vertical-align:middle"></label>
+      <span class="sep"></span>
+      <input type="number" id="fast-n" value="100" min="1" max="3000">
+      <button id="fast">ฝึกเร็ว (episodes)</button>
+    </div>
+    <div class="stats">
+      <span>Episode <b id="st-ep">0</b></span>
+      <span>Step ใน episode <b id="st-step">0</b></span>
+      <span>Reward สะสม <b id="st-rew">0</b></span>
+      <span>ε <b id="st-eps">–</b></span>
+      <span>α <b id="st-alpha">–</b></span>
+      <span>γ <b id="st-gamma">–</b></span>
+      <span>จำนวน update <b id="st-upd">0</b></span>
+      <span>ช่องที่ไม่เป็น 0 <b id="st-nz">0</b></span>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>① State s → Discretize <small>(ค่าต่อเนื่อง → ช่องในตาราง)</small></h2>
+      <canvas id="sim" width="600" height="220"></canvas>
+      <table style="margin-top:8px">
+        <thead><tr><th>ตัวแปร</th><th>ค่า</th><th>bin</th><th style="width:36%">ตำแหน่ง bin</th><th>ช่วงของ bin</th></tr></thead>
+        <tbody id="state-rows"></tbody>
+      </table>
+      <p class="explain">s = (<span id="s-tuple">–</span>) คือ "ที่อยู่" ของแถวใน Q-table ขนาด 3×3×8×12 = 864 states × 2 actions</p>
+    </div>
+
+    <div class="card">
+      <h2>② เลือก Action ด้วย ε-greedy</h2>
+      <div id="decision" class="explain" style="font-size:14px;color:var(--text)">กด <b>Step</b> เพื่อเริ่ม</div>
+      <div class="qbars">
+        <div class="qbar" id="qb0"><span>Q(s, ← ซ้าย)</span><div class="track"><div class="fill"></div></div><span class="num">–</span></div>
+        <div class="qbar" id="qb1"><span>Q(s, → ขวา)</span><div class="track"><div class="fill"></div></div><span class="num">–</span></div>
+      </div>
+      <p class="explain">สุ่มเลข u ∈ [0,1) ถ้า u &lt; ε → <b>Explore</b> (สุ่ม action) ไม่เช่นนั้น → <b>Exploit</b> (เลือก action ที่ Q สูงสุด)
+        · ε จะลดลงตามจำนวน episode (สำรวจมากตอนแรก แล้วค่อยใช้ความรู้)</p>
+      <h2 style="margin-top:16px">Reward ต่อ episode</h2>
+      <canvas id="chart" width="600" height="160"></canvas>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>③ แทนค่าในสมการ Bellman (Q-Learning update)</h2>
+    <div class="eq" id="eq">
+      <div class="line"><span class="lbl">สมการ</span>Q(s,a) ← Q(s,a) + α [ r + γ · max<sub>a′</sub> Q(s′,a′) − Q(s,a) ]</div>
+      <div class="muted" style="font-size:14px;font-family:system-ui">กด Step เพื่อดูการแทนค่า</div>
+    </div>
+  </div>
+
+  <div class="grid3">
+    <div class="card">
+      <h2>④ Q-table <small>(slice θ × θ̇ ที่ x bin, ẋ bin คงที่)</small></h2>
+      <div class="slices" id="slices"></div>
+      <div class="heatwrap"><div class="heat" id="heat"></div></div>
+      <div class="legend">
+        <span>max Q(s,·): 0 <span class="grad"></span> 100</span>
+        <span>← / → = action ที่ Q สูงกว่า (policy)</span>
+        <span><span style="display:inline-block;width:14px;height:14px;border:2px solid var(--hl);border-radius:3px;vertical-align:-3px"></span> s (ช่องที่เพิ่ง update)</span>
+        <span><span style="display:inline-block;width:14px;height:14px;border:2px dashed var(--text);border-radius:3px;vertical-align:-3px"></span> s′ (state ถัดไป)</span>
+      </div>
+      <div id="cellinfo" class="muted">ชี้หรือคลิกที่ช่องเพื่อดูค่า Q ทั้ง 2 action</div>
+    </div>
+    <div class="card">
+      <h2>⑤ Update log <small>(ล่าสุดอยู่บน)</small></h2>
+      <table class="log">
+        <thead><tr><th>ep:step</th><th>s</th><th>a</th><th>Q เดิม</th><th>δ</th><th>Q ใหม่</th></tr></thead>
+        <tbody id="log"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const f = (v, d = 3) => (+v).toFixed(d).replace(/\.?0+$/, m => m.includes(".") ? "" : m) || "0";
+const n3 = v => (+v).toFixed(3);
+const p3 = v => v < 0 ? `(${n3(v)})` : n3(v);   // ใส่วงเล็บให้ค่าติดลบในสมการ
+const NAMES = [["x", "ตำแหน่งรถ", "m"], ["ẋ", "ความเร็วรถ", "m/s"], ["θ", "มุมไม้", "°"], ["θ̇", "ความเร็วเชิงมุม", "rad/s"]];
+const ACT = ["← ซ้าย", "→ ขวา"];
+let ws, info = null, slice = null, last = null, log = [], history = [], running = false;
+let viewSlice = null;   // slice ที่ผู้ใช้เลือกดูเอง (null = ติดตาม state ปัจจุบัน)
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws/qlab`);
+  ws.onopen = () => { setStatus("connected", "ok"); send({ cmd: "fps", fps: +$("fps").value }); };
+  ws.onclose = () => { setStatus("disconnected — retrying…", "err"); setRunning(false); setTimeout(connect, 1500); };
+  ws.onmessage = e => handle(JSON.parse(e.data));
+}
+function setStatus(t, c) { $("status").textContent = t; $("status").className = c; }
+function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+function handle(m) {
+  if (m.type === "info") {
+    info = m; history = m.history;
+    $("st-ep").textContent = m.episode; $("st-eps").textContent = m.epsilon; $("st-alpha").textContent = m.alpha;
+    $("st-gamma").textContent = m.gamma; $("st-upd").textContent = m.total_updates;
+    $("st-nz").textContent = `${m.nonzero} / ${m.cells}`;
+    $("source").value = m.source; $("fast").disabled = false; $("fast").textContent = "ฝึกเร็ว (episodes)";
+    drawChart();
+  } else if (m.type === "slice") {
+    slice = m.slice; viewSlice = null; drawHeat();
+  } else if (m.type === "step") {
+    last = m;
+    if (!viewSlice) slice = m.slice;
+    renderStep(m);
+    if (!viewSlice) drawHeat(true);
+  }
+}
+
+// ---------- ① state ----------
+function binRange(i, b) {
+  const lo = info.lows[i] + b * (info.highs[i] - info.lows[i]) / info.bins[i];
+  const hi = lo + (info.highs[i] - info.lows[i]) / info.bins[i];
+  const edgeL = b === 0 ? "−∞" : fmtUnit(i, lo), edgeR = b === info.bins[i] - 1 ? "+∞" : fmtUnit(i, hi);
+  return `[${edgeL}, ${edgeR})`;
+}
+function fmtUnit(i, v) { return i === 2 ? (v * 180 / Math.PI).toFixed(1) + "°" : v.toFixed(2); }
+function renderState(obs, s) {
+  $("state-rows").innerHTML = NAMES.map(([sym, th, unit], i) => {
+    const bars = Array.from({ length: info.bins[i] }, (_, b) => `<span class="${b === s[i] ? "on" : ""}"></span>`).join("");
+    const val = i === 2 ? (obs[i] * 180 / Math.PI).toFixed(2) + "°" : obs[i].toFixed(3);
+    return `<tr><td><b>${sym}</b> <span class="muted">${th}</span></td><td>${val}</td>
+      <td><b>${s[i]}</b><span class="muted"> / ${info.bins[i] - 1}</span></td>
+      <td><div class="binbar">${bars}</div></td><td class="muted">${binRange(i, s[i])}</td></tr>`;
+  }).join("");
+  $("s-tuple").textContent = s.join(", ");
+}
+function drawSim(obs, action) {
+  const c = $("sim"), g = c.getContext("2d"), W = c.width, H = c.height;
+  const [x, , theta] = obs || [0, 0, 0];
+  const scale = W / 4.8 * 0.9, cx = W / 2 + x * scale, ty = H * 0.8;
+  g.clearRect(0, 0, W, H);
+  g.strokeStyle = css("--line"); g.lineWidth = 3;
+  g.beginPath(); g.moveTo(W/2 - 2.4*scale, ty); g.lineTo(W/2 + 2.4*scale, ty); g.stroke();
+  g.fillStyle = css("--bad"); [-2.4, 2.4].forEach(v => g.fillRect(W/2 + v*scale - 2, ty - 10, 4, 20));
+  g.fillStyle = css("--cart"); g.fillRect(cx - 30, ty - 15, 60, 30);
+  const L = scale * 0.75;
+  g.strokeStyle = css("--pole"); g.lineWidth = 7; g.lineCap = "round";
+  g.beginPath(); g.moveTo(cx, ty - 15); g.lineTo(cx + L * Math.sin(theta), ty - 15 - L * Math.cos(theta)); g.stroke();
+  if (action !== undefined) {
+    const d = action === 1 ? 1 : -1;
+    g.fillStyle = css("--hl"); g.beginPath();
+    g.moveTo(cx + d * 58, ty); g.lineTo(cx + d * 38, ty - 9); g.lineTo(cx + d * 38, ty + 9); g.fill();
+  }
+}
+
+// ---------- ② decision ----------
+function renderDecision(m) {
+  const badge = m.explore ? `<span class="badge explore">Explore (สุ่ม)</span>` : `<span class="badge exploit">Exploit (argmax Q)</span>`;
+  const cmp = m.explore ? `u = ${n3(m.u)} &lt; ε = ${m.epsilon}` : `u = ${n3(m.u)} ≥ ε = ${m.epsilon}`;
+  const tie = !m.explore && m.q_s[0] === m.q_s[1] ? ` <span class="muted">(Q เท่ากัน → argmax เลือก action 0)</span>` : "";
+  $("decision").innerHTML = `${cmp} → ${badge} → เลือก <b>a = ${m.action} (${ACT[m.action]})</b>${tie}`;
+  const mx = Math.max(1e-9, Math.abs(m.q_s[0]), Math.abs(m.q_s[1]));
+  [0, 1].forEach(a => {
+    const el = $("qb" + a);
+    el.classList.toggle("chosen", a === m.action);
+    el.querySelector(".fill").style.width = (Math.abs(m.q_s[a]) / mx * 100) + "%";
+    el.querySelector(".num").textContent = n3(m.q_s[a]);
+  });
+}
+
+// ---------- ③ equation ----------
+function renderEq(m) {
+  const V = (cls, v) => `<span class="v ${cls}">${v}</span>`;
+  const s = `(${m.s.join(",")})`, s2 = `(${m.s2.join(",")})`;
+  const maxExpr = m.terminated
+    ? `0 <span class="muted" style="font-size:14px;font-family:system-ui">(s′ เป็น terminal: ไม้ล้ม/รถหลุดราง → ไม่มีอนาคต)</span>`
+    : `max(${n3(m.q_s2[0])}, ${n3(m.q_s2[1])}) = ${V("v-m", n3(m.max_q2))}`;
+  const sign = m.td_error >= 0 ? "pos" : "neg";
+  $("eq").innerHTML = `
+    <div class="line"><span class="lbl">สมการ</span>Q(s,a) ← Q(s,a) + α [ r + γ · max<sub>a′</sub> Q(s′,a′) − Q(s,a) ]</div>
+    <div class="line"><span class="lbl">ค่าที่ใช้</span>s = ${s}, a = ${m.action} (${ACT[m.action]}), r = ${V("v-r", m.reward)}, s′ = ${s2},
+      α = ${V("v-a", m.alpha)}, γ = ${V("v-g", m.gamma)}</div>
+    <div class="line"><span class="lbl">max Q(s′,·)</span>max<sub>a′</sub> Q(${s2}, a′) = ${maxExpr}</div>
+    <div class="line"><span class="lbl">แทนค่า</span>Q${s.replace(")", "," + m.action + ")")} ← ${V("v-old", n3(m.old))} + ${V("v-a", m.alpha)} × [ ${V("v-r", m.reward)} + ${V("v-g", m.gamma)} × ${V("v-m", n3(m.max_q2))} − ${V("v-old", n3(m.old))} ]</div>
+    <div class="line"><span class="lbl">① TD target</span>r + γ · max Q(s′,·) = ${m.reward} + ${m.gamma} × ${n3(m.max_q2)} = <b>${n3(m.target)}</b></div>
+    <div class="line"><span class="lbl">② TD error δ</span>target − Q(s,a) = ${n3(m.target)} − ${n3(m.old)} = <b class="${sign}">${n3(m.td_error)}</b></div>
+    <div class="line"><span class="lbl">③ Q ใหม่</span>Q(s,a) + α · δ = ${n3(m.old)} + ${m.alpha} × ${p3(m.td_error)} = ${V("v-new", n3(m.new))}</div>
+    <p class="explain">${m.td_error >= 0
+      ? "δ > 0 → ผลจริงดีกว่าที่คาด → ค่า Q ของ action นี้เพิ่มขึ้น (มีโอกาสถูกเลือกมากขึ้น)"
+      : "δ < 0 → ผลจริงแย่กว่าที่คาด → ค่า Q ของ action นี้ลดลง"}
+      ${m.truncated ? " · episode ถูกตัดที่ 500 steps (truncated) แต่ยังใช้ max Q(s′) ตามปกติเพราะไม้ยังไม่ล้ม" : ""}
+      ${m.terminated ? " · episode จบ → reset environment" : ""}</p>`;
+}
+
+// ---------- ④ heatmap ----------
+function drawHeat(flash = false) {
+  if (!slice || !info) return;
+  // slice buttons (x bin × ẋ bin)
+  const here = last ? [last.s2[0], last.s2[1]] : null;
+  $("slices").innerHTML = `<span class="muted">x bin / ẋ bin:</span>` +
+    [0, 1, 2].flatMap(x => [0, 1, 2].map(xd =>
+      `<button data-x="${x}" data-xd="${xd}" class="${slice.x === x && slice.xd === xd ? "on" : ""} ${here && here[0] === x && here[1] === xd ? "here" : ""}">x${x} ẋ${xd}</button>`)).join("") +
+    (viewSlice ? ` <button id="follow">↺ ติดตาม state</button>` : "");
+  $("slices").querySelectorAll("button[data-x]").forEach(b => b.onclick = () => {
+    viewSlice = [+b.dataset.x, +b.dataset.xd]; send({ cmd: "slice", x: viewSlice[0], xd: viewSlice[1] });
+  });
+  if ($("follow")) $("follow").onclick = () => { viewSlice = null; if (last) { slice = last.slice; drawHeat(); } };
+
+  let h = `<div class="hd">θ \\ θ̇</div>`;
+  for (let j = 0; j < 12; j++) h += `<div class="hd">${j}</div>`;
+  const accent = css("--accent"), panel = css("--panel");
+  for (let i = 0; i < 8; i++) {
+    const lo = (-12 + i * 3), hi = lo + 3;
+    const rng = i === 0 ? `< ${hi}°` : i === 7 ? `≥ ${lo}°` : `${lo}°..${hi}°`;
+    h += `<div class="rh">${i} <span style="opacity:.7">${rng}</span></div>`;
+    for (let j = 0; j < 12; j++) {
+      const [ql, qr] = slice.q[i][j], mx = Math.max(ql, qr), v = slice.visits[i][j];
+      const pct = Math.max(0, Math.min(100, mx));
+      const arrow = ql === 0 && qr === 0 ? "·" : (qr > ql ? "→" : "←");
+      const isCur = last && viewSlice === null && last.s[2] === i && last.s[3] === j;
+      const isNxt = last && slice.x === last.s2[0] && slice.xd === last.s2[1] && last.s2[2] === i && last.s2[3] === j;
+      const fg = pct > 55 ? "#fff" : "var(--text)";
+      h += `<div class="cell ${isCur ? "cur" : ""} ${isNxt && !isCur ? "nxt" : ""} ${isCur && flash ? "flash" : ""}"
+        data-i="${i}" data-j="${j}" style="background:color-mix(in srgb, ${accent} ${pct}%, ${panel});color:${fg}">
+        <span class="arr">${arrow}</span><span class="val">${mx ? mx.toFixed(1) : ""}</span></div>`;
+    }
+  }
+  $("heat").innerHTML = h;
+  $("heat").querySelectorAll(".cell").forEach(c => {
+    const show = () => {
+      const i = +c.dataset.i, j = +c.dataset.j, [ql, qr] = slice.q[i][j];
+      $("cellinfo").innerHTML = `s = (${slice.x}, ${slice.xd}, ${i}, ${j}) · Q(s, ←) = <b>${ql.toFixed(3)}</b> · Q(s, →) = <b>${qr.toFixed(3)}</b>
+        · policy = <b>${ql === qr ? "เท่ากัน" : (qr > ql ? "→ ขวา" : "← ซ้าย")}</b> · ถูก update <b>${slice.visits[i][j]}</b> ครั้ง`;
+    };
+    c.onmouseenter = show; c.onclick = show;
+  });
+}
+
+// ---------- ⑤ log + chart ----------
+function renderLog(m) {
+  log.unshift(m); log = log.slice(0, 14);
+  $("log").innerHTML = log.map(d => `<tr><td>${d.episode}:${d.step}</td><td>(${d.s.join(",")})</td><td>${d.action === 1 ? "→" : "←"}${d.explore ? "*" : ""}</td>
+    <td>${n3(d.old)}</td><td class="${d.td_error >= 0 ? "pos" : "neg"}">${n3(d.td_error)}</td><td><b>${n3(d.new)}</b></td></tr>`).join("") +
+    `<tr><td colspan="6" class="muted" style="border:0">* = explore (สุ่ม)</td></tr>`;
+}
+function drawChart() {
+  const c = $("chart"), g = c.getContext("2d"), W = c.width, H = c.height, pad = 28;
+  g.clearRect(0, 0, W, H);
+  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "11px system-ui"; g.lineWidth = 1;
+  [0, 250, 500].forEach(v => { const y = H - pad - v/500*(H - 2*pad); g.beginPath(); g.moveTo(pad, y); g.lineTo(W-4, y); g.stroke(); g.fillText(v, 2, y+4); });
+  const d = history.slice(-200), n = d.length;
+  if (!n) { g.fillText("ยังไม่มี episode ที่จบ", pad + 8, H/2); return; }
+  const X = i => pad + (n === 1 ? 0 : i/(n-1)) * (W - pad - 4), Y = r => H - pad - r/500*(H - 2*pad);
+  g.strokeStyle = css("--pole"); g.lineWidth = 2; g.beginPath();
+  d.forEach((r, i) => i ? g.lineTo(X(i), Y(r)) : g.moveTo(X(i), Y(r))); g.stroke();
+}
+
+function renderStep(m) {
+  $("st-ep").textContent = m.episode; $("st-step").textContent = m.step; $("st-rew").textContent = m.ep_reward;
+  $("st-eps").textContent = m.epsilon; $("st-alpha").textContent = m.alpha;
+  $("st-upd").textContent = (+$("st-upd").textContent) + 1;
+  renderState(m.obs, m.s); drawSim(m.next_obs, m.action); renderDecision(m); renderEq(m); renderLog(m);
+}
+
+function setRunning(r) { running = r; $("play").textContent = r ? "Pause ❚❚" : "Play ▶"; $("step").disabled = r; }
+$("step").onclick = () => send({ cmd: "step" });
+$("play").onclick = () => { send({ cmd: running ? "pause" : "play" }); setRunning(!running); };
+$("fps").oninput = () => { $("fps-val").textContent = $("fps").value; send({ cmd: "fps", fps: +$("fps").value }); };
+$("reset").onclick = () => { setRunning(false); log = []; last = null; $("log").innerHTML = ""; send({ cmd: "reset", source: $("source").value }); };
+$("source").onchange = () => $("reset").click();
+$("fast").onclick = () => { $("fast").disabled = true; $("fast").textContent = "กำลังฝึก…"; send({ cmd: "fast", episodes: +$("fast-n").value }); };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { drawSim(last && last.next_obs, last && last.action); drawHeat(); drawChart(); });
+
+drawSim(null); connect();
+</script>
+</body>
+</html>

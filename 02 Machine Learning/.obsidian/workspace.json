@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/03_PCA20_Clustering_and_Comparison.md",
+                "file": "Machine Learning Vault/02_Supervised_Learning/00_Supervised_Learning_MOC.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "03_PCA20_Clustering_and_Comparison"
+              "title": "00_Supervised_Learning_MOC"
             }
           }
         ]
@@ -187,9 +187,11 @@
   },
   "active": "6f900b15a01d5738",
   "lastOpenFiles": [
+    "Machine Learning Vault/03_Unsupervised_Learning/Dimensionality_Reduction.md",
+    "Machine Learning Vault/03_Unsupervised_Learning/00_Unsupervised_Learning_MOC.md",
+    "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/03_PCA20_Clustering_and_Comparison.md",
     "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/images/tsne_kmeans_clusters.png",
     "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/02_PCA_vs_tSNE_Reconstruction.md",
-    "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/03_PCA20_Clustering_and_Comparison.md",
     "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/images/pca20_kmeans_clusters.png",
     "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/Unsupervised_MNIST.md",
     "Machine Learning Vault/03_Unsupervised_Learning/01_Unsupervised_MNIST/images/pca_reconstruction.png",
@@ -207,7 +209,6 @@
     "Machine Learning Vault/02_Supervised_Learning/02_Regression_California_Housing/images",
     "Machine Learning Vault/02_Supervised_Learning/02_Regression_California_Housing",
     "Machine Learning Vault/02_Supervised_Learning/01_Classification_MNIST/images/mnist_samples.png",
-    "Machine Learning Vault/02_Supervised_Learning/01_Classification_MNIST/images/mnist_distribution.png",
     "Machine Learning Vault/02_Supervised_Learning/01_Classification_MNIST/images",
     "Machine Learning Vault/02_Supervised_Learning/01_Classification_MNIST",
     "Machine Learning Vault/02_Supervised_Learning/Classification_MNIST.md",
@@ -216,7 +217,6 @@
     "Machine Learning Vault/02_Supervised_Learning/Decision_Trees.md",
     "Machine Learning Vault/02_Supervised_Learning/Linear_and_Logistic_Regression.md",
     "Machine Learning Vault/02_Supervised_Learning/Support_Vector_Machines.md",
-    "Machine Learning Vault/03_Unsupervised_Learning/Dimensionality_Reduction.md",
     "Machine Learning Vault/03_Unsupervised_Learning/Clustering_KMeans.md",
     "Machine Learning Vault/03_Unsupervised_Learning/Gaussian_Mixtures.md",
     "pima_indians_diabetes_real.csv",
@@ -231,7 +231,6 @@
     "Machine Learning Vault/04_Reinforcement_Learning/Reinforcement_Learning_Examples.md",
     "Machine Learning Vault/04_Reinforcement_Learning/00_Reinforcement_Learning_MOC.md",
     "Machine Learning Vault/03_Unsupervised_Learning/Clustering.md",
-    "Machine Learning Vault/03_Unsupervised_Learning/00_Unsupervised_Learning_MOC.md",
     "Machine Learning Vault/06_Deep_Learning/Convolutional_Neural_Networks.md"
   ]
 }

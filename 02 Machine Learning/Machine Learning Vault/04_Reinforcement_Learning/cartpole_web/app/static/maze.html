@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maze DQN Lab</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #667085; --line: #e3e6eb;
+    --accent: #2563eb; --wall: #334155; --good: #16a34a; --bad: #dc2626; --warn: #b45309;
+    --hl: #7c3aed; --pole: #d97706; --cold: #dc2626; --hot: #16a34a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1218; --panel: #171b23; --text: #e6e9ef; --muted: #98a2b3; --line: #2a303b;
+      --accent: #60a5fa; --wall: #475569; --good: #4ade80; --bad: #f87171; --warn: #fbbf24;
+      --hl: #c084fc; --pole: #f59e0b; --cold: #f87171; --hot: #4ade80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .nav a { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13px; }
+  .nav a.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; }
+  .card h2 small { color: var(--muted); font-weight: normal; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+  .full { margin-top: 16px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+  button, select, input[type=number] { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--bg); color: var(--text); font: inherit; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.on { border-color: var(--hl); color: var(--hl); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=number] { width: 80px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; display: block; }
+  #maze { cursor: default; }
+  #maze.edit { cursor: crosshair; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 4px 6px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .explore { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .exploit { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .qbar { display: grid; grid-template-columns: 70px 1fr 64px; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px; }
+  .qbar .track { height: 12px; background: var(--line); border-radius: 3px; position: relative; overflow: hidden; }
+  .qbar .fill { position: absolute; top: 0; bottom: 0; background: var(--accent); }
+  .qbar .zero { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--muted); left: 50%; }
+  .qbar.chosen { font-weight: 600; } .qbar.chosen .fill { background: var(--hl); }
+  .eq { font-family: "Cambria Math", "STIX Two Math", Cambria, Georgia, serif; font-size: 18px; line-height: 2; overflow-x: auto; }
+  .eq .line { white-space: nowrap; }
+  .eq .lbl { font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); display: inline-block; min-width: 190px; }
+  .v { padding: 0 4px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+  .v-r { background: color-mix(in srgb, var(--good) 16%, transparent); }
+  .v-g { background: color-mix(in srgb, var(--pole) 16%, transparent); }
+  .v-m { background: color-mix(in srgb, var(--hl) 16%, transparent); }
+  .v-q { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .v-y { background: var(--hl); color: #fff; font-weight: 700; }
+  .explain { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 8px; align-items: center; }
+  .grad { display: inline-block; width: 110px; height: 10px; border-radius: 3px; vertical-align: middle;
+          background: linear-gradient(90deg, color-mix(in srgb, var(--cold) 45%, var(--panel)), var(--panel), color-mix(in srgb, var(--hot) 55%, var(--panel))); border: 1px solid var(--line); }
+  .bufbar { height: 10px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 6px 0 10px; }
+  .bufbar div { height: 100%; background: var(--accent); }
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .compare > div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .compare b.big { font-size: 20px; display: block; font-variant-numeric: tabular-nums; }
+  .pos { color: var(--good); } .neg { color: var(--bad); } .muted { color: var(--muted); }
+  #status { font-size: 12px; } .ok { color: var(--good); } .err { color: var(--bad); }
+  .warnbox { color: var(--bad); font-size: 13px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav"><a href="/">🏠 หน้ารวม</a><a href="/cartpole">CartPole</a><a href="/qtable">CartPole Q-Table Lab</a><a class="on" href="/maze">Maze DQN</a><a href="/atari">Atari DQN</a></nav>
+  <h1>Walk in Maze ด้วย Deep Q-Network (DQN)</h1>
+  <p class="sub">Neural Network ทำหน้าที่แทน Q-table · เรียนรู้จาก Experience Replay · ใช้ Target Network θ⁻ ให้ target นิ่ง
+    · <span id="status">connecting…</span></p>
+
+  <div class="card">
+    <div class="toolbar">
+      <select id="maze-sel">
+        <option value="note">Maze จากโน้ต (3×6)</option>
+        <option value="medium">Medium (8×8)</option>
+        <option value="complex">Complex (10×10)</option>
+      </select>
+      <button id="reset" title="สร้าง network ใหม่ (สุ่มน้ำหนัก)">Reset network</button>
+      <span class="sep"></span>
+      <button id="m-train" class="on">Train (ε-greedy + learn)</button>
+      <button id="m-test">Test (greedy, ไม่ learn)</button>
+      <span class="sep"></span>
+      <button class="primary" id="step">Step ▶|</button>
+      <button id="play">Play ▶</button>
+      <label class="muted" style="font-size:13px">ความเร็ว <b id="fps-val">8</b> step/s
+        <input type="range" id="fps" min="1" max="120" value="8" style="vertical-align:middle"></label>
+      <span class="sep"></span>
+      <input type="number" id="fast-n" value="50" min="1" max="2000">
+      <button id="fast">ฝึกเร็ว (episodes)</button>
+      <span class="sep"></span>
+      <button id="edit">✏️ แก้กำแพง</button>
+    </div>
+    <div class="stats">
+      <span>Episode <b id="st-ep">0</b></span>
+      <span>Step <b id="st-step">0</b></span>
+      <span>Reward สะสม <b id="st-rew">0</b></span>
+      <span>ε <b id="st-eps">1</b></span>
+      <span>|D| <b id="st-buf">0</b></span>
+      <span>Learn steps <b id="st-learn">0</b></span>
+      <span>Sync θ⁻ อีก <b id="st-sync">–</b> steps</span>
+      <span>ทางสั้นสุด (BFS) <b id="st-short">–</b></span>
+      <span>Episode ล่าสุด <b id="st-last">–</b></span>
+    </div>
+    <div id="warn" class="warnbox"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>① Environment: Maze <small>(สี = max Q(s,·) จาก network · ลูกศร = policy argmax)</small></h2>
+      <canvas id="maze" width="600" height="420"></canvas>
+      <div class="legend">
+        <span>max Q: ต่ำ <span class="grad"></span> สูง</span>
+        <span>🟢 Start · 🏆 Goal · ⬛ กำแพง</span>
+        <span>● agent · เส้น = ทางเดินใน episode นี้</span>
+      </div>
+      <p class="explain">Reward: ถึง Goal <b>+1</b> (จบ episode) · เดิน 1 ก้าว <b>−0.04</b> · ชนกำแพง/ขอบ <b>−0.25</b> (อยู่ที่เดิม)
+        · จำกัด <span id="maxsteps">–</span> steps ต่อ episode</p>
+    </div>
+    <div class="card">
+      <h2>② Q-Network: forward pass ของ state ปัจจุบัน</h2>
+      <canvas id="net" width="600" height="300"></canvas>
+      <div id="decision" style="font-size:14px;margin-top:6px">กด <b>Step</b> เพื่อเริ่ม</div>
+      <div id="qbars" style="margin-top:6px"></div>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>③ DQN Loss: แทนค่าด้วยตัวอย่างจริงจาก mini-batch</h2>
+    <div class="eq" id="eq">
+      <div class="line"><span class="lbl">Loss function</span>L(θ) = 𝔼<sub>(s,a,r,s′)∼U(D)</sub> [ ( r + γ · max<sub>a′</sub> Q(s′,a′; θ⁻) − Q(s,a; θ) )² ]</div>
+      <div class="muted" style="font-size:14px;font-family:system-ui">กด Step เพื่อดูการแทนค่า</div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>④ Experience Replay Buffer D <small>(ประสบการณ์ล่าสุดอยู่บน)</small></h2>
+      <div class="muted" style="font-size:13px">|D| = <b id="buf-n">0</b> / <span id="buf-max">5000</span> · ทุก step สุ่ม <b id="buf-batch">32</b> ตัวอย่างแบบ uniform มา train
+        (ตัดความสัมพันธ์ระหว่าง step ที่ติดกัน)</div>
+      <div class="bufbar"><div id="buf-fill" style="width:0"></div></div>
+      <table>
+        <thead><tr><th>s (แถว,คอลัมน์)</th><th>a</th><th>r</th><th>s′</th><th>done</th></tr></thead>
+        <tbody id="buf-rows"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>⑤ การเรียนรู้</h2>
+      <div class="muted" style="font-size:13px">จำนวน step ต่อ episode (เส้นประ = ทางสั้นสุด)</div>
+      <canvas id="chart-steps" width="600" height="170"></canvas>
+      <div class="muted" style="font-size:13px;margin-top:8px">Loss ของ mini-batch ต่อ learn step</div>
+      <canvas id="chart-loss" width="600" height="140"></canvas>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>⑥ Q-table vs DQN <small>ทำไมต้องใช้ Neural Network?</small></h2>
+    <div class="compare">
+      <div><span class="muted">Q-table (tabular)</span><b class="big" id="cmp-table">–</b>ค่า = จำนวน state × 4 actions · เก็บค่าแยกทุกช่อง เรียนรู้ช่องไหนได้ช่องนั้น</div>
+      <div><span class="muted">DQN (network นี้)</span><b class="big" id="cmp-net">–</b>พารามิเตอร์ (weights + biases) · ประมาณ Q(s,a) ด้วยฟังก์ชันเดียว</div>
+    </div>
+    <p class="explain">หมายเหตุ: maze นี้เล็ก และ input เป็น one-hot ของตำแหน่ง Q-table จึงเล็กกว่า network ด้วยซ้ำ
+      ตัวอย่างนี้ใช้เพื่อแสดง <b>กลไกของ DQN</b> (network, replay, target network)
+      ข้อได้เปรียบจริงของ DQN มาเมื่อ state ใหญ่มากหรือต่อเนื่อง เช่นภาพ 84×84×4 ใน Atari มีจำนวน state ที่เป็นไปได้มหาศาลจนเก็บเป็นตารางไม่ได้ (Curse of Dimensionality)
+      network จะ <i>generalize</i> ไปยัง state ที่คล้ายกันแม้ไม่เคยเห็นมาก่อน · ลองกด ✏️ แก้กำแพงหลังฝึกเสร็จ แล้วดูว่า agent ปรับตัวอย่างไร</p>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const n3 = v => (+v).toFixed(3);
+const p3 = v => v < 0 ? `(${n3(v)})` : n3(v);
+const AN = ["↑ ขึ้น", "→ ขวา", "↓ ลง", "← ซ้าย"], AS = ["↑", "→", "↓", "←"];
+let ws, info = null, last = null, policy = null, trail = [], buf = [], losses = [], running = false, editing = false, mode = "train";
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws/maze`);
+  ws.onopen = () => { setStatus("connected", "ok"); send({ cmd: "fps", fps: +$("fps").value }); };
+  ws.onclose = () => { setStatus("disconnected — retrying…", "err"); setRunning(false); setTimeout(connect, 1500); };
+  ws.onmessage = e => handle(JSON.parse(e.data));
+}
+function setStatus(t, c) { $("status").textContent = t; $("status").className = c; }
+function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+function handle(m) {
+  if (m.type === "info") {
+    const changed = !info || info.name !== m.name || info.learn_steps > m.learn_steps;
+    info = m; policy = m.policy;
+    if (changed) { buf = []; losses = []; }
+    trail = [m.pos];
+    $("maze-sel").value = m.name; $("maxsteps").textContent = m.max_steps;
+    $("st-ep").textContent = m.episodes; $("st-eps").textContent = m.mode === "test" ? "0 (greedy)" : m.epsilon;
+    $("st-buf").textContent = m.buffer; $("st-learn").textContent = m.learn_steps;
+    $("st-short").textContent = m.shortest ?? "ไม่มีทาง!";
+    const lh = m.history[m.history.length - 1];
+    $("st-last").textContent = lh ? `${lh[1]} steps ${lh[2] ? "✅ ถึง Goal" : "❌ หมดเวลา"}` : "–";
+    $("warn").textContent = m.shortest === null ? "⚠️ maze นี้ไม่มีทางไป Goal — แก้กำแพงให้เปิดทาง" : "";
+    $("cmp-table").textContent = `${m.n_states} × 4 = ${m.table_size.toLocaleString()}`;
+    $("cmp-net").textContent = m.n_params.toLocaleString();
+    $("buf-max").textContent = m.buffer_max; $("buf-batch").textContent = m.batch;
+    $("buf-n").textContent = m.buffer; $("buf-fill").style.width = (m.buffer / m.buffer_max * 100) + "%";
+    $("fast").disabled = false; $("fast").textContent = "ฝึกเร็ว (episodes)";
+    renderBuf(); drawMaze(); drawCharts();
+    if (!last) drawNet(null);
+  } else if (m.type === "step") {
+    last = m; policy = m.policy;
+    if (trail.length === 0 || trail[trail.length - 1][0] !== m.pos[0] || trail[trail.length - 1][1] !== m.pos[1]) trail.push(m.pos);
+    trail.push(m.pos2);
+    if (m.mode === "train") { buf.unshift(m.exp); buf = buf.slice(0, 9); }
+    if (m.replay) { losses.push(m.replay.loss); if (losses.length > 600) losses.shift(); }
+    renderStep(m);
+    if (m.terminated || m.truncated) trail = [info.start];
+  }
+}
+
+// ---------- ① maze ----------
+function geom() {
+  const c = $("maze"), W = c.width, H = c.height;
+  const cs = Math.floor(Math.min((W - 10) / info.w, (H - 10) / info.h));
+  return { c, W, H, cs, ox: (W - cs * info.w) / 2, oy: (H - cs * info.h) / 2 };
+}
+function drawMaze() {
+  if (!info) return;
+  const { c, W, H, cs, ox, oy } = geom(), g = c.getContext("2d");
+  g.clearRect(0, 0, W, H);
+  // ช่วงค่า max Q เฉพาะช่องที่เดินได้ (ใช้ทำสี)
+  const vals = [];
+  info.grid.forEach((row, r) => [...row].forEach((ch, cc) => { if (ch !== "#" && policy) vals.push(Math.max(...policy[r * info.w + cc])); }));
+  const lo = Math.min(...vals, 0), hi = Math.max(...vals, 0.01);
+  const cold = css("--cold"), hot = css("--hot");
+  info.grid.forEach((row, r) => [...row].forEach((ch, cc) => {
+    const x = ox + cc * cs, y = oy + r * cs;
+    if (ch === "#") { g.fillStyle = css("--wall"); g.fillRect(x, y, cs, cs); return; }
+    const q = policy ? policy[r * info.w + cc] : [0, 0, 0, 0], mx = Math.max(...q);
+    const t = mx >= 0 ? Math.min(1, mx / hi) : -Math.min(1, mx / lo);
+    g.fillStyle = t >= 0 ? rgba(hot, t * 0.55) : rgba(cold, -t * 0.45);
+    g.fillRect(x, y, cs, cs);
+    g.strokeStyle = css("--line"); g.lineWidth = 1; g.strokeRect(x + .5, y + .5, cs - 1, cs - 1);
+    const isGoal = r === info.goal[0] && cc === info.goal[1], isStart = r === info.start[0] && cc === info.start[1];
+    g.textAlign = "center"; g.textBaseline = "middle";
+    if (isGoal) { g.font = `${cs * .5}px system-ui`; g.fillText("🏆", x + cs / 2, y + cs / 2); return; }
+    if (isStart) { g.font = `${cs * .28}px system-ui`; g.fillText("🟢", x + cs * .2, y + cs * .2); }
+    if (policy && q.some(v => v !== 0)) {
+      g.fillStyle = css("--muted"); g.font = `${cs * .34}px system-ui`;
+      g.fillText(AS[q.indexOf(mx)], x + cs / 2, y + cs / 2 - cs * .06);
+      if (cs > 44) { g.font = `${cs * .16}px system-ui`; g.fillText(mx.toFixed(2), x + cs / 2, y + cs * .8); }
+    }
+  }));
+  // trail
+  if (trail.length > 1) {
+    g.strokeStyle = css("--hl"); g.globalAlpha = .55; g.lineWidth = Math.max(2, cs * .08); g.lineJoin = "round";
+    g.beginPath();
+    trail.forEach(([r, cc], i) => { const x = ox + cc * cs + cs / 2, y = oy + r * cs + cs / 2; i ? g.lineTo(x, y) : g.moveTo(x, y); });
+    g.stroke(); g.globalAlpha = 1;
+  }
+  // agent
+  const ap = last && !(last.terminated || last.truncated) ? last.pos2 : (info.pos || info.start);
+  const ax = ox + ap[1] * cs + cs / 2, ay = oy + ap[0] * cs + cs / 2;
+  g.fillStyle = css("--hl"); g.beginPath(); g.arc(ax, ay, cs * .22, 0, 2 * Math.PI); g.fill();
+  if (last && last.bumped) { g.strokeStyle = css("--bad"); g.lineWidth = 3; g.beginPath(); g.arc(ax, ay, cs * .32, 0, 2 * Math.PI); g.stroke(); }
+  if (editing) { g.fillStyle = css("--hl"); g.font = "13px system-ui"; g.textAlign = "left"; g.fillText("โหมดแก้กำแพง: คลิกที่ช่อง", 8, 12); }
+}
+const _rgb = {}, _cv = document.createElement("canvas").getContext("2d");
+function rgba(color, a) {   // แปลงสี CSS → rgba(…, a) สำหรับ canvas
+  if (!_rgb[color]) { _cv.fillStyle = color; const n = parseInt(_cv.fillStyle.slice(1), 16); _rgb[color] = [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  const [r, g, b] = _rgb[color];
+  return `rgba(${r},${g},${b},${a})`;
+}
+$("maze").onclick = e => {
+  if (!editing || !info) return;
+  const { c, cs, ox, oy } = geom(), rect = c.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * c.width / rect.width, y = (e.clientY - rect.top) * c.height / rect.height;
+  const cc = Math.floor((x - ox) / cs), r = Math.floor((y - oy) / cs);
+  if (r >= 0 && r < info.h && cc >= 0 && cc < info.w) send({ cmd: "toggle", r, c: cc });
+};
+
+// ---------- ② network ----------
+function drawNet(m) {
+  const c = $("net"), g = c.getContext("2d"), W = c.width, H = c.height;
+  g.clearRect(0, 0, W, H);
+  const cols = [70, 230, 390, 530], top = 34, bottom = H - 14;
+  g.fillStyle = css("--muted"); g.font = "12px system-ui"; g.textAlign = "center";
+  const hid = info ? info.hidden : 64;
+  [["Input (one-hot)", info ? `${info.h}×${info.w} = ${info.n_states}` : ""], [`Hidden 1`, `${hid} · ReLU`], [`Hidden 2`, `${hid} · ReLU`], ["Output", "Q(s,a) · linear"]]
+    .forEach(([a, b], i) => { g.fillText(a, cols[i], 12); g.fillText(b, cols[i], 26); });
+  // เส้นเชื่อม (ภาพรวม fully-connected)
+  g.strokeStyle = css("--line"); g.lineWidth = 1;
+  const blocks = [[cols[0] + 45, cols[1] - 45], [cols[1] + 45, cols[2] - 45], [cols[2] + 45, cols[3] - 40]];
+  blocks.forEach(([x1, x2]) => { for (let k = 0; k < 9; k++) for (let j = 0; j < 9; j++) {
+    g.beginPath(); g.moveTo(x1, top + 20 + k * 26); g.lineTo(x2, top + 20 + j * 26); g.stroke(); } });
+  // input เป็น mini-grid
+  if (info) {
+    const cs = Math.min(84 / info.w, 200 / info.h), gx = cols[0] - cs * info.w / 2, gy = (top + bottom) / 2 - cs * info.h / 2;
+    info.grid.forEach((row, r) => [...row].forEach((ch, cc) => {
+      const on = m && m.pos[0] === r && m.pos[1] === cc;
+      g.fillStyle = on ? css("--hl") : ch === "#" ? css("--wall") : css("--line");
+      g.fillRect(gx + cc * cs + .5, gy + r * cs + .5, cs - 1, cs - 1);
+    }));
+  }
+  // hidden layers เป็นตาราง 8×8 ของ neuron สีตาม activation
+  [["h1", cols[1]], ["h2", cols[2]]].forEach(([k, x]) => {
+    const a = m ? m[k] : new Array(hid).fill(0), mx = Math.max(...a, 1e-6), side = Math.ceil(Math.sqrt(a.length));
+    const sp = 11, gx = x - side * sp / 2, gy = (top + bottom) / 2 - side * sp / 2;
+    a.forEach((v, i) => {
+      g.fillStyle = v > 0 ? rgba(css("--accent"), .15 + .85 * v / mx) : css("--line");
+      g.beginPath(); g.arc(gx + (i % side) * sp + sp / 2, gy + Math.floor(i / side) * sp + sp / 2, 4.2, 0, 2 * Math.PI); g.fill();
+    });
+    if (m) { g.fillStyle = css("--muted"); g.fillText(`active ${a.filter(v => v > 0).length}/${a.length}`, x, gy + side * sp + 16); }
+  });
+  // output
+  for (let i = 0; i < 4; i++) {
+    const y = top + 40 + i * 58, chosen = m && m.action === i;
+    g.fillStyle = chosen ? css("--hl") : css("--panel"); g.strokeStyle = chosen ? css("--hl") : css("--muted"); g.lineWidth = 2;
+    g.beginPath(); g.arc(cols[3] - 22, y, 16, 0, 2 * Math.PI); g.fill(); g.stroke();
+    g.fillStyle = chosen ? "#fff" : css("--text"); g.font = "16px system-ui"; g.fillText(AS[i], cols[3] - 22, y + 6);
+    g.fillStyle = css("--text"); g.font = "12px system-ui"; g.textAlign = "left";
+    g.fillText(m ? n3(m.q[i]) : "–", cols[3] + 0, y + 4); g.textAlign = "center";
+  }
+}
+function renderDecision(m) {
+  const badge = m.mode === "test" ? `<span class="badge exploit">Test: greedy</span>`
+    : m.explore ? `<span class="badge explore">Explore (สุ่ม)</span>` : `<span class="badge exploit">Exploit (argmax Q)</span>`;
+  const cmp = m.mode === "test" ? "ไม่สุ่ม ไม่ learn" : m.explore ? `u = ${n3(m.u)} < ε = ${m.epsilon}` : `u = ${n3(m.u)} ≥ ε = ${m.epsilon}`;
+  const res = m.terminated ? " → 🏆 ถึง Goal!" : m.bumped ? " → 💥 ชนกำแพง อยู่ที่เดิม" : "";
+  $("decision").innerHTML = `s = (${m.pos}) · ${cmp} → ${badge} → a = <b>${AN[m.action]}</b> · r = <b>${m.reward}</b>${res}`;
+  const mx = Math.max(...m.q.map(Math.abs), 1e-6);
+  $("qbars").innerHTML = m.q.map((v, i) => {
+    const w = Math.abs(v) / mx * 50, left = v >= 0 ? 50 : 50 - w;
+    return `<div class="qbar ${i === m.action ? "chosen" : ""}"><span>Q(s, ${AS[i]})</span>
+      <div class="track"><div class="zero"></div><div class="fill" style="left:${left}%;width:${w}%"></div></div><span>${n3(v)}</span></div>`;
+  }).join("");
+}
+
+// ---------- ③ equation ----------
+function renderEq(m) {
+  const head = `<div class="line"><span class="lbl">Loss function</span>L(θ) = 𝔼<sub>(s,a,r,s′)∼U(D)</sub> [ ( r + γ · max<sub>a′</sub> Q(s′,a′; θ⁻) − Q(s,a; θ) )² ]</div>`;
+  if (m.mode === "test") { $("eq").innerHTML = head + `<p class="explain">โหมด Test: ใช้ network อย่างเดียว ไม่มีการคำนวณ loss หรือ update น้ำหนัก</p>`; return; }
+  if (!m.replay) {
+    $("eq").innerHTML = head + `<p class="explain">Replay buffer มี ${m.buffer} ตัวอย่าง ยังไม่ถึง batch size ${info.batch} → เก็บประสบการณ์ต่อก่อน ยังไม่เริ่ม train</p>`;
+    return;
+  }
+  const s = m.replay.sample, V = (c, v) => `<span class="v ${c}">${v}</span>`, g = info.gamma;
+  const maxLine = s.done
+    ? `0 <span class="muted" style="font-size:14px;font-family:system-ui">(done = ถึง Goal แล้ว → ไม่มีอนาคต)</span>`
+    : `max(${s.q_next.map(n3).join(", ")}) = ${V("v-m", n3(s.max_next))}`;
+  const err = s.y - s.q_sa;
+  $("eq").innerHTML = head + `
+    <div class="line"><span class="lbl">สุ่มตัวอย่างจาก D</span>(s, a, r, s′, done) = ((${s.s}), ${AS[s.a]}, ${V("v-r", s.r)}, (${s.s2}), ${s.done})
+      <span class="muted" style="font-size:13px;font-family:system-ui"> ← ตัวอย่างที่ 1 จาก ${m.replay.batch} ใน mini-batch</span></div>
+    <div class="line"><span class="lbl">Target network θ⁻</span>max<sub>a′</sub> Q((${s.s2}), a′; θ⁻) = ${maxLine}</div>
+    <div class="line"><span class="lbl">① target y</span>y = r + γ · max Q(s′; θ⁻) = ${V("v-r", s.r)} + ${V("v-g", g)} × ${V("v-m", p3(s.max_next))} = ${V("v-y", n3(s.y))}</div>
+    <div class="line"><span class="lbl">② Online network θ</span>Q((${s.s}), ${AS[s.a]}; θ) = ${V("v-q", n3(s.q_sa))}</div>
+    <div class="line"><span class="lbl">③ squared error</span>( y − Q(s,a;θ) )² = ( ${n3(s.y)} − ${p3(s.q_sa)} )² = (${n3(err)})² = <b>${s.sq_err.toFixed(5)}</b></div>
+    <div class="line"><span class="lbl">④ Loss ของ batch</span>L(θ) = เฉลี่ยของ ${m.replay.batch} ตัวอย่าง = <b>${m.replay.loss.toFixed(5)}</b></div>
+    <div class="line"><span class="lbl">⑤ Gradient descent</span>θ ← θ − η · ∇<sub>θ</sub>L(θ) <span class="muted" style="font-size:14px;font-family:system-ui">(Adam, η = ${info.lr})</span></div>
+    <div class="line"><span class="lbl">⑥ Target network</span>θ⁻ ← θ ทุก ${info.target_every} learn steps
+      ${m.replay.synced ? `<b class="pos">✔ sync แล้วใน step นี้!</b>` : `<span class="muted" style="font-size:14px;font-family:system-ui">(อีก ${m.target_in} steps)</span>`}</div>
+    <p class="explain">${err >= 0 ? "y > Q(s,a;θ) → network ประเมินต่ำไป → gradient จะดัน Q(s,a) ขึ้น" : "y < Q(s,a;θ) → network ประเมินสูงไป → gradient จะดึง Q(s,a) ลง"}
+      · ต่างจาก Q-table ตรงที่การ update ครั้งเดียวเปลี่ยนน้ำหนักที่ใช้ร่วมกันทุก state (ดูสีทั้ง maze เปลี่ยนพร้อมกัน)</p>`;
+}
+
+// ---------- ④ buffer / ⑤ charts ----------
+function renderBuf() {
+  $("buf-rows").innerHTML = buf.length ? buf.map(([s, a, r, s2, d]) =>
+    `<tr><td>(${s})</td><td>${AS[a]}</td><td class="${r > 0 ? "pos" : r < -0.1 ? "neg" : ""}">${r}</td><td>(${s2})</td><td>${d ? "✔" : ""}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="muted">ยังว่าง (กด Step ในโหมด Train)</td></tr>`;
+}
+function axes(g, W, H, pad, maxV, ticks) {
+  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "11px system-ui"; g.lineWidth = 1; g.textAlign = "left";
+  ticks.forEach(v => { const y = H - pad - v / maxV * (H - 2 * pad); g.beginPath(); g.moveTo(pad, y); g.lineTo(W - 4, y); g.stroke(); g.fillText(+v.toFixed(3), 2, y + 4); });
+}
+function drawCharts() {
+  if (!info) return;
+  let c = $("chart-steps"), g = c.getContext("2d"), W = c.width, H = c.height, pad = 30;
+  g.clearRect(0, 0, W, H);
+  const hs = info.history, maxS = info.max_steps;
+  axes(g, W, H, pad, maxS, [0, Math.round(maxS / 2), maxS]);
+  const X = (i, n) => pad + (n <= 1 ? 0 : i / (n - 1)) * (W - pad - 6), Y = v => H - pad - v / maxS * (H - 2 * pad);
+  if (info.shortest) { g.strokeStyle = css("--good"); g.setLineDash([5, 4]); g.beginPath(); g.moveTo(pad, Y(info.shortest)); g.lineTo(W - 4, Y(info.shortest)); g.stroke(); g.setLineDash([]); }
+  if (hs.length) {
+    g.strokeStyle = css("--accent"); g.lineWidth = 2; g.beginPath();
+    hs.forEach((h, i) => i ? g.lineTo(X(i, hs.length), Y(h[1])) : g.moveTo(X(i, hs.length), Y(h[1]))); g.stroke();
+    hs.forEach((h, i) => { g.fillStyle = h[2] ? css("--accent") : css("--bad"); g.beginPath(); g.arc(X(i, hs.length), Y(h[1]), 2.5, 0, 2 * Math.PI); g.fill(); });
+  } else { g.fillStyle = css("--muted"); g.fillText("ยังไม่มี episode ที่จบ", pad + 8, H / 2); }
+
+  c = $("chart-loss"); g = c.getContext("2d"); W = c.width; H = c.height;
+  g.clearRect(0, 0, W, H);
+  const mxL = Math.max(...losses, 1e-4);
+  axes(g, W, H, pad, mxL, [0, mxL / 2, mxL]);
+  if (losses.length > 1) {
+    g.strokeStyle = css("--pole"); g.lineWidth = 1.5; g.beginPath();
+    losses.forEach((l, i) => { const x = X(i, losses.length), y = H - pad - l / mxL * (H - 2 * pad); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke();
+  } else { g.fillStyle = css("--muted"); g.fillText(`เริ่มคำนวณ loss เมื่อ |D| ≥ ${info.batch}`, pad + 8, H / 2); }
+}
+
+function renderStep(m) {
+  $("st-ep").textContent = m.episode; $("st-step").textContent = m.step; $("st-rew").textContent = m.ep_reward;
+  $("st-eps").textContent = m.mode === "test" ? "0 (greedy)" : m.epsilon;
+  $("st-buf").textContent = m.buffer; $("st-learn").textContent = m.learn_steps; $("st-sync").textContent = m.target_in;
+  $("buf-n").textContent = m.buffer; $("buf-fill").style.width = (m.buffer / info.buffer_max * 100) + "%";
+  drawMaze(); drawNet(m); renderDecision(m); renderEq(m); renderBuf(); drawCharts();
+}
+
+function setRunning(r) { running = r; $("play").textContent = r ? "Pause ❚❚" : "Play ▶"; $("step").disabled = r; }
+function setMode(md) {
+  mode = md; $("m-train").classList.toggle("on", md === "train"); $("m-test").classList.toggle("on", md === "test");
+  last = null; send({ cmd: "mode", mode: md });
+}
+$("step").onclick = () => send({ cmd: "step" });
+$("play").onclick = () => { send({ cmd: running ? "pause" : "play" }); setRunning(!running); };
+$("fps").oninput = () => { $("fps-val").textContent = $("fps").value; send({ cmd: "fps", fps: +$("fps").value }); };
+$("reset").onclick = () => { setRunning(false); last = null; info = null; send({ cmd: "reset", maze: $("maze-sel").value }); };
+$("maze-sel").onchange = () => $("reset").click();
+$("m-train").onclick = () => setMode("train");
+$("m-test").onclick = () => setMode("test");
+$("fast").onclick = () => { $("fast").disabled = true; $("fast").textContent = "กำลังฝึก…"; send({ cmd: "fast", episodes: +$("fast-n").value }); };
+$("edit").onclick = () => {
+  editing = !editing; $("edit").classList.toggle("on", editing); $("maze").classList.toggle("edit", editing);
+  if (editing && running) { send({ cmd: "pause" }); setRunning(false); }
+  drawMaze();
+};
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { drawMaze(); drawNet(last); drawCharts(); });
+
+connect();
+</script>
+</body>
+</html>

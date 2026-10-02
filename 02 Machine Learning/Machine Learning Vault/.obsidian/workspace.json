@@ -11,10 +11,14 @@
             "id": "8776ca7716981501",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "04_Reinforcement_Learning/Reinforcement_Learning_Examples.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Reinforcement_Learning_Examples"
             }
           }
         ]
@@ -179,5 +183,29 @@
     }
   },
   "active": "8776ca7716981501",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "04_Reinforcement_Learning/cartpole_web/app/models/atari/breakout_dqn.json",
+    "04_Reinforcement_Learning/cartpole_web/app/models/atari/breakout_dqn.pt",
+    "04_Reinforcement_Learning/cartpole_web/script.js",
+    "04_Reinforcement_Learning/cartpole_web/style.css",
+    "04_Reinforcement_Learning/cartpole_web/index.html",
+    "04_Reinforcement_Learning/cartpole_web/app/models/atari",
+    "04_Reinforcement_Learning/cartpole_web/app/static/atari.html",
+    "04_Reinforcement_Learning/cartpole_web/app/atari_train.py",
+    "04_Reinforcement_Learning/cartpole_web/app/atari_ws.py",
+    "04_Reinforcement_Learning/cartpole_web/app/atari_ws.py.tmp.20560.9725bf7644eb",
+    "04_Reinforcement_Learning/cartpole_web/app/sedW57uxr",
+    "04_Reinforcement_Learning/cartpole_web/README.md",
+    "04_Reinforcement_Learning/Reinforcement_Learning_Concepts.md",
+    "04_Reinforcement_Learning/00_Reinforcement_Learning_MOC.md",
+    "04_Reinforcement_Learning/Reinforcement_Learning_Examples.md",
+    "03_Unsupervised_Learning/Clustering_KMeans.md",
+    "03_Unsupervised_Learning/Clustering.md",
+    "03_Unsupervised_Learning/00_Unsupervised_Learning_MOC.md",
+    "03_Unsupervised_Learning/01_Unsupervised_MNIST/03_PCA20_Clustering_and_Comparison.md",
+    "03_Unsupervised_Learning/01_Unsupervised_MNIST/02_PCA_vs_tSNE_Reconstruction.md",
+    "02_Supervised_Learning/02_Regression_California_Housing/Regression_California_Housing.md",
+    "02_Supervised_Learning/01_Classification_MNIST/Classification_MNIST.md",
+    "03_Unsupervised_Learning/01_Unsupervised_MNIST/Unsupervised_MNIST.md"
+  ]
 }

@@ -1,0 +1,12 @@
+services:
+  cartpole:
+    build: .
+    container_name: cartpole-web
+    ports:
+      - "8000:8000"
+    volumes:
+      # checkpoint ของ Atari DQN เก็บไว้นอก container (ไม่หายเมื่อ rebuild)
+      - ./app/models/atari:/app/app/models/atari
+    environment:
+      - ATARI_MEMORY=10000   # replay memory ของหน้าเว็บ (1 transition ≈ 56 KB)
+    restart: unless-stopped

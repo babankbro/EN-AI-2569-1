@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atari Breakout DQN</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --panel: #ffffff; --text: #1d2330; --muted: #667085; --line: #e3e6eb;
+    --accent: #2563eb; --good: #16a34a; --bad: #dc2626; --warn: #b45309; --hl: #7c3aed; --pole: #d97706;
+    --code: #f1f3f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1218; --panel: #171b23; --text: #e6e9ef; --muted: #98a2b3; --line: #2a303b;
+      --accent: #60a5fa; --good: #4ade80; --bad: #f87171; --warn: #fbbf24; --hl: #c084fc; --pole: #f59e0b;
+      --code: #11151c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans Thai", sans-serif; }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .sub a { color: var(--accent); }
+  .nav { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .nav a { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text); text-decoration: none; font-size: 13px; }
+  .nav a.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0; }
+  .card h2 { font-size: 14px; margin: 0 0 10px; }
+  .card h2 small { color: var(--muted); font-weight: normal; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .gridgame { display: grid; grid-template-columns: 380px 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .grid2, .gridgame { grid-template-columns: 1fr; } }
+  .full { margin-top: 16px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .toolbar .sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 4px; }
+  button, select, input[type=number] { padding: 7px 12px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--bg); color: var(--text); font: inherit; }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.on { border-color: var(--hl); color: var(--hl); font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  input[type=number] { width: 110px; }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+  .stats b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .msg { font-size: 13px; color: var(--hl); margin-top: 6px; min-height: 18px; }
+  img.px { image-rendering: pixelated; display: block; width: 100%; background: #000; border-radius: 4px; }
+  #screen { max-width: 360px; margin: 0 auto; aspect-ratio: 160 / 210; }
+  .over { display: flex; justify-content: space-between; font-size: 13px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  canvas { width: 100%; display: block; }
+  .pipe { display: grid; grid-template-columns: 1fr auto 1.3fr; gap: 10px; align-items: center; }
+  .pipe .arrow { color: var(--muted); font-size: 20px; }
+  .cap { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: center; }
+  .stacklbl { display: grid; grid-template-columns: repeat(4, 1fr); font-size: 11px; color: var(--muted); text-align: center; }
+  .layers { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; align-items: end; }
+  @media (max-width: 700px) { .layers { grid-template-columns: repeat(2, 1fr); } }
+  .layer { text-align: center; font-size: 12px; }
+  .layer .t { font-weight: 600; font-size: 12px; }
+  .layer .s { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .qout { display: flex; flex-direction: column; gap: 6px; }
+  .qbar { display: grid; grid-template-columns: 56px 1fr 62px; gap: 6px; align-items: center; font-size: 12px; }
+  .qbar .track { height: 12px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .qbar .fill { height: 100%; background: var(--accent); }
+  .qbar.chosen { font-weight: 700; } .qbar.chosen .fill { background: var(--hl); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 5px 8px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  td code, pre { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 12px; }
+  pre { background: var(--code); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 0; line-height: 1.5; }
+  .eq { font-family: "Cambria Math", "STIX Two Math", Cambria, Georgia, serif; font-size: 18px; line-height: 2; overflow-x: auto; }
+  .eq .line { white-space: nowrap; }
+  .eq .lbl { font-family: system-ui, sans-serif; font-size: 13px; color: var(--muted); display: inline-block; min-width: 200px; }
+  .v { padding: 0 4px; border-radius: 4px; font-variant-numeric: tabular-nums; }
+  .v-r { background: color-mix(in srgb, var(--good) 16%, transparent); }
+  .v-g { background: color-mix(in srgb, var(--pole) 16%, transparent); }
+  .v-m { background: color-mix(in srgb, var(--hl) 16%, transparent); }
+  .v-q { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .v-y { background: var(--hl); color: #fff; font-weight: 700; }
+  .explain { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .sample { display: flex; gap: 12px; align-items: flex-start; margin: 4px 0 8px; }
+  .sample figure { margin: 0; width: 110px; }
+  .sample figcaption { font-size: 12px; color: var(--muted); text-align: center; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; }
+  .b-rand { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .b-greedy { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .b-other { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); }
+  .note { border-left: 3px solid var(--warn); padding: 8px 12px; background: color-mix(in srgb, var(--warn) 8%, transparent); border-radius: 0 8px 8px 0; font-size: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  #status { font-size: 12px; } .ok { color: var(--good); } .err { color: var(--bad); }
+  .pos { color: var(--good); } .neg { color: var(--bad); } .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav"><a href="/">🏠 หน้ารวม</a><a href="/cartpole">CartPole</a><a href="/qtable">CartPole Q-Table Lab</a><a href="/maze">Maze DQN</a><a class="on" href="/atari">Atari DQN</a></nav>
+  <h1>Atari Breakout ด้วย Deep Q-Network</h1>
+  <p class="sub">ทำตาม <a href="https://keras.io/examples/rl/deep_q_network_breakout/" target="_blank" rel="noopener">Keras: Deep Q-Learning for Atari Breakout</a>
+    · agent เห็นแค่ pixel บนจอ → CNN → Q ของ 4 actions · <span id="status">connecting…</span></p>
+
+  <div class="card">
+    <div class="toolbar">
+      <button id="m-train" data-mode="train" class="on">DQN: Train (Keras loop)</button>
+      <button id="m-greedy" data-mode="greedy">DQN: เล่นด้วย network (ε = 0.05)</button>
+      <button id="m-heuristic" data-mode="heuristic">Heuristic (ตามลูกบอล)</button>
+      <button id="m-random" data-mode="random">Random</button>
+      <span class="sep"></span>
+      <button class="primary" id="step">Step ▶|</button>
+      <button id="play">Play ▶</button>
+      <label class="muted" style="font-size:13px">ความเร็ว <b id="fps-val">30</b> fps
+        <input type="range" id="fps" min="1" max="60" value="30" style="vertical-align:middle"></label>
+    </div>
+    <div class="toolbar" style="margin-top:8px">
+      <input type="number" id="fast-n" value="20000" min="100" step="1000">
+      <button id="fast">ฝึกเร็ว (frames, ไม่แสดงภาพ)</button>
+      <span class="sep"></span>
+      <button id="save">💾 Save checkpoint</button>
+      <button id="load">📂 Load checkpoint</button>
+      <button id="reset">Reset network</button>
+      <span class="muted" style="font-size:13px" id="ckpt">checkpoint: –</span>
+    </div>
+    <div class="stats">
+      <span>Frame count <b id="st-frames">0</b></span>
+      <span>Episode <b id="st-ep">0</b></span>
+      <span>ε <b id="st-eps">1</b></span>
+      <span>Replay memory <b id="st-mem">0</b></span>
+      <span>Running reward (100 ep) <b id="st-run">0</b> <span class="muted">/ solved &gt; 40</span></span>
+      <span>Update ทุก 4 frames · อีก <b id="st-upd">–</b></span>
+      <span>Sync target อีก <b id="st-sync">–</b> frames</span>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <div class="gridgame">
+    <div class="card">
+      <h2>🎮 เกม (210 × 160 RGB)</h2>
+      <img id="screen" class="px" alt="Breakout screen">
+      <div class="over"><span>Score <b id="g-score">0</b></span><span>Lives <b id="g-lives">5</b></span><span>Step <b id="g-step">0</b></span></div>
+      <div id="decision" style="font-size:13px;margin-top:8px">กด <b>Step</b> หรือ <b>Play</b></div>
+      <div class="qout" style="margin-top:8px" id="qbars"></div>
+    </div>
+    <div class="card">
+      <h2>① Preprocessing <small>AtariPreprocessing + FrameStack(4)</small></h2>
+      <div class="pipe">
+        <div><img id="raw-small" class="px" style="aspect-ratio:160/210;max-width:120px;margin:0 auto" alt=""><div class="cap">ภาพจริง 210×160×3</div></div>
+        <div class="arrow">→</div>
+        <div><img id="stack" class="px" style="aspect-ratio:4/1" alt="">
+          <div class="stacklbl"><span>t−3</span><span>t−2</span><span>t−1</span><span>t (ล่าสุด)</span></div>
+          <div class="cap">input ของ network: 4 × 84 × 84 (grayscale)</div></div>
+      </div>
+      <ul class="explain" style="margin:10px 0 0;padding-left:18px">
+        <li><b>Frame skip 4</b>: เลือก action 1 ครั้ง แล้วทำซ้ำ 4 เฟรม (max-pool 2 เฟรมสุดท้ายกันภาพกระพริบ)</li>
+        <li><b>Grayscale + resize 84×84</b>: ลดข้อมูลจาก 100,800 เหลือ 7,056 ค่าต่อเฟรม</li>
+        <li><b>Frame stacking 4</b>: เฟรมเดียวบอกทิศทาง/ความเร็วลูกบอลไม่ได้ ต้องดูหลายเฟรมต่อกัน</li>
+        <li><b>No-op reset สูงสุด 30</b>: สุ่มจำนวน NOOP ตอนเริ่มเพื่อให้สถานะเริ่มต้นไม่ซ้ำกัน</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card full">
+    <h2>② CNN (DeepMind architecture) <small>feature maps ของ state ปัจจุบัน · <span id="nparams"></span></small></h2>
+    <div class="layers">
+      <div class="layer"><img id="f-in" class="px" style="aspect-ratio:4/1" alt=""><div class="t">Input</div><div class="s">4 × 84 × 84</div></div>
+      <div class="layer"><img id="f-c1" class="px" style="aspect-ratio:167/83" alt=""><div class="t">Conv2D 32 · 8×8 · s4</div><div class="s">→ 32 × 20 × 20</div></div>
+      <div class="layer"><img id="f-c2" class="px" style="aspect-ratio:1" alt=""><div class="t">Conv2D 64 · 4×4 · s2</div><div class="s">→ 64 × 9 × 9</div></div>
+      <div class="layer"><img id="f-c3" class="px" style="aspect-ratio:1" alt=""><div class="t">Conv2D 64 · 3×3 · s1</div><div class="s">→ 64 × 7 × 7</div></div>
+      <div class="layer"><div id="dense" style="font-size:13px;text-align:left;padding:6px 0"></div><div class="t">Flatten 3136 → Dense 512 → Dense 4</div><div class="s">→ Q(s, a)</div></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <table id="layer-table"><thead><tr><th>Layer</th><th>Output</th><th style="text-align:right">Params</th></tr></thead><tbody></tbody></table>
+      <pre>def create_q_model():   # Keras
+    return keras.Sequential([
+        layers.Lambda(lambda t: keras.ops.transpose(t, [0, 2, 3, 1]),
+                      output_shape=(84, 84, 4), input_shape=(4, 84, 84)),
+        layers.Conv2D(32, 8, strides=4, activation="relu"),
+        layers.Conv2D(64, 4, strides=2, activation="relu"),
+        layers.Conv2D(64, 3, strides=1, activation="relu"),
+        layers.Flatten(),
+        layers.Dense(512, activation="relu"),
+        layers.Dense(num_actions, activation="linear"),
+    ])</pre>
+    </div>
+    <p class="explain">feature maps แต่ละช่องถูก normalize แยกกัน (สว่าง = activation สูง) · conv ชั้นแรกจับขอบ/ตำแหน่งของ paddle ลูกบอล และอิฐ ชั้นลึกขึ้นรวมเป็นรูปแบบที่ซับซ้อนขึ้น
+      · ตอน network ยังไม่ได้ฝึก feature maps ยังเป็นแค่ผลจากน้ำหนักสุ่ม</p>
+  </div>
+
+  <div class="card full">
+    <h2>③ Huber loss: แทนค่าด้วยตัวอย่างจริงจาก mini-batch</h2>
+    <div id="eq" class="eq"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>④ ε-greedy schedule <small>(ตาม Keras)</small></h2>
+      <canvas id="eps-chart" width="600" height="200"></canvas>
+      <p class="explain">0 – 50,000 frames: สุ่มทั้งหมด (<code>epsilon_random_frames</code>) เพื่อเติม replay memory
+        · จากนั้น ε ลดลงเชิงเส้นจาก 1.0 จนถึง 0.1 ที่ 1,000,000 frames (<code>epsilon_greedy_frames</code>)</p>
+    </div>
+    <div class="card">
+      <h2>⑤ Reward ต่อ episode</h2>
+      <canvas id="rew-chart" width="600" height="200"></canvas>
+      <div class="legend"><span><i style="background:var(--accent)"></i>DQN train</span><span><i style="background:var(--good)"></i>DQN เล่น</span>
+        <span><i style="background:var(--pole)"></i>heuristic</span><span><i style="background:var(--muted)"></i>random</span>
+        <span>— running reward (100 ep) · - - solved = 40</span></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>⑥ Hyperparameters <small>(ค่าเดียวกับตัวอย่าง Keras)</small></h2>
+      <table id="cfg-table"><tbody></tbody></table>
+    </div>
+    <div class="card">
+      <h2>⑦ ต้องฝึกนานแค่ไหน?</h2>
+      <div class="note">ตัวอย่าง Keras ระบุว่าได้ผลดีที่ประมาณ <b>10 ล้าน frames</b> ใช้เวลาไม่ถึง 24 ชั่วโมงบนเครื่องสมัยใหม่
+        (paper ของ DeepMind ฝึก 50 ล้าน frames) · ในหน้านี้ใช้ CPU ได้ราว <b id="speed">~120</b> frames/s
+        → 10 ล้าน frames ≈ <b id="eta">23</b> ชั่วโมง</div>
+      <p class="explain" style="font-size:14px">การกด Train ในหน้าเว็บไม่กี่นาทีจึงเห็นแค่ <b>กลไก</b> ของ DQN (ช่วง 50,000 frames แรกยังเป็นการสุ่มล้วน)
+        ถ้าต้องการ agent ที่เล่นเก่ง ให้ฝึกแบบ offline ใน container แล้วกด 📂 Load checkpoint:</p>
+      <pre>docker compose exec cartpole python -m app.atari_train --frames 2000000
+# ฝึกต่อจาก checkpoint เดิม
+docker compose exec cartpole python -m app.atari_train --frames 2000000 --resume</pre>
+      <p class="explain">replay memory ในหน้าเว็บลดเหลือ <b id="webmem">10,000</b> (Keras ใช้ 100,000 ≈ 5.6 GB RAM) · script offline ใช้ 50,000 เป็นค่าเริ่มต้น (--memory)</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const n4 = v => (+v).toFixed(4);
+const p4 = v => v < 0 ? `(${n4(v)})` : n4(v);
+const ANAME = ["NOOP", "FIRE", "RIGHT →", "← LEFT"];
+const CFG_DESC = {
+  seed: "random seed", gamma: "discount factor γ", epsilon_min: "ε ต่ำสุด", epsilon_max: "ε เริ่มต้น",
+  batch_size: "ขนาด mini-batch", max_steps_per_episode: "step สูงสุดต่อ episode",
+  epsilon_random_frames: "จำนวน frames แรกที่สุ่มล้วน", epsilon_greedy_frames: "frames ที่ใช้ลด ε จนถึงต่ำสุด",
+  max_memory_length: "ขนาด replay memory", update_after_actions: "train network ทุก ๆ กี่ frames",
+  update_target_network: "copy θ → θ⁻ ทุก ๆ กี่ frames", learning_rate: "Adam learning rate", clipnorm: "gradient norm clipping",
+};
+let ws, info = null, last = null, running = false, fast = false, speed = null;
+const img = (id, b64, type = "png") => { if (b64) $(id).src = `data:image/${type};base64,${b64}`; };
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  ws = new WebSocket(`${proto}://${location.host}/ws/atari`);
+  ws.onopen = () => { setStatus("connected", "ok"); send({ cmd: "fps", fps: +$("fps").value }); };
+  ws.onclose = () => { setStatus("disconnected — retrying…", "err"); setTimeout(connect, 1500); };
+  ws.onmessage = e => handle(JSON.parse(e.data));
+}
+function setStatus(t, c) { $("status").textContent = t; $("status").className = c; }
+function send(o) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(o)); }
+
+function handle(m) {
+  if (m.type === "loading") setStatus("กำลังโหลด PyTorch + ALE…", "");
+  else if (m.type === "info") renderInfo(m);
+  else if (m.type === "step") renderStep(m);
+  else if (m.type === "fast_progress") {
+    speed = m.fps;
+    $("msg").textContent = `กำลังฝึก ${m.done.toLocaleString()} / ${m.total.toLocaleString()} frames · ${m.fps} frames/s · ε = ${m.epsilon}`;
+    $("st-frames").textContent = m.frame_count.toLocaleString(); $("st-eps").textContent = m.epsilon;
+    $("speed").textContent = Math.round(m.fps); $("eta").textContent = (1e7 / m.fps / 3600).toFixed(0);
+    if (info) { info.frame_count = m.frame_count; drawEps(); }
+  }
+}
+
+function renderInfo(m) {
+  setStatus("connected", "ok");
+  info = m; running = m.running; fast = m.fast;
+  ["train", "greedy", "heuristic", "random"].forEach(k => $("m-" + k).classList.toggle("on", m.mode === k));
+  $("play").textContent = running ? "Pause ❚❚" : "Play ▶";
+  $("fast").textContent = fast ? "■ หยุดฝึก" : "ฝึกเร็ว (frames, ไม่แสดงภาพ)";
+  ["step", "save", "load", "reset"].forEach(id => $(id).disabled = running || fast);
+  $("play").disabled = fast; $("load").disabled = running || fast || !m.checkpoint;
+  $("st-frames").textContent = m.frame_count.toLocaleString(); $("st-ep").textContent = m.episode;
+  $("st-eps").textContent = m.epsilon; $("st-mem").textContent = `${m.memory.toLocaleString()} / ${m.web_memory.toLocaleString()}`;
+  $("st-run").textContent = m.running_reward; $("st-upd").textContent = m.timing.update_in; $("st-sync").textContent = m.timing.target_in.toLocaleString();
+  $("ckpt").textContent = m.checkpoint
+    ? `checkpoint: ${m.checkpoint.frame_count.toLocaleString()} frames · running reward ${(+m.checkpoint.running_reward).toFixed(2)} · ${m.checkpoint.saved_at}`
+    : "checkpoint: ยังไม่มี";
+  if (m.message) $("msg").textContent = m.message;
+  $("nparams").textContent = `${m.n_params.toLocaleString()} parameters`;
+  $("webmem").textContent = m.web_memory.toLocaleString();
+  $("layer-table").querySelector("tbody").innerHTML = m.layers.map(([n, s, p]) =>
+    `<tr><td>${n}</td><td>${s}</td><td style="text-align:right">${p.toLocaleString()}</td></tr>`).join("") +
+    `<tr><td><b>รวม</b></td><td></td><td style="text-align:right"><b>${m.n_params.toLocaleString()}</b></td></tr>`;
+  $("cfg-table").querySelector("tbody").innerHTML = Object.entries(m.cfg).map(([k, v]) =>
+    `<tr><td><code>${k}</code></td><td style="text-align:right">${typeof v === "number" ? v.toLocaleString() : v}${k === "max_memory_length" && v !== 100000 ? ' <span class="muted">(Keras: 100,000)</span>' : ""}</td><td class="muted">${CFG_DESC[k] || ""}</td></tr>`).join("");
+  if (!last) renderEqEmpty("กด Step หรือ Play ในโหมด Train เพื่อดูการแทนค่า");
+  drawEps(); drawRewards();
+}
+
+function renderStep(m) {
+  last = m;
+  img("screen", m.frame, "jpeg"); img("raw-small", m.frame, "jpeg"); img("stack", m.stack);
+  img("f-in", m.stack);
+  img("f-c1", m.conv1); img("f-c2", m.conv2); img("f-c3", m.conv3);
+  $("g-score").textContent = m.ep_reward; $("g-lives").textContent = m.lives; $("g-step").textContent = m.ep_steps;
+  $("st-frames").textContent = m.frame_count.toLocaleString(); $("st-ep").textContent = m.episode;
+  $("st-eps").textContent = m.mode === "train" ? m.epsilon : "–"; $("st-mem").textContent = `${m.memory.toLocaleString()} / ${info.web_memory.toLocaleString()}`;
+  $("st-upd").textContent = m.timing.update_in; $("st-sync").textContent = m.timing.target_in.toLocaleString();
+  const reasons = {
+    random_frames: [`b-rand`, `สุ่ม (frame ${m.frame_count.toLocaleString()} < ${info.cfg.epsilon_random_frames.toLocaleString()})`],
+    epsilon: [`b-rand`, `Explore: สุ่มเพราะ rand < ε`], greedy: [`b-greedy`, `Exploit: argmax Q`],
+    heuristic: [`b-other`, `Heuristic`], random: [`b-other`, `Random`],
+  }[m.reason];
+  $("decision").innerHTML = `<span class="badge ${reasons[0]}">${reasons[1]}</span> → a = <b>${ANAME[m.action]}</b>
+    ${m.reward ? ` · <b class="pos">+${m.reward} อิฐแตก!</b>` : ""}${m.lost_life ? ` · <b class="neg">เสียชีวิต</b>` : ""}`;
+  const mx = Math.max(...m.q.map(Math.abs), 1e-9);
+  $("qbars").innerHTML = m.q.map((v, i) => `<div class="qbar ${i === m.action ? "chosen" : ""}"><span>${ANAME[i]}</span>
+    <div class="track"><div class="fill" style="width:${Math.abs(v) / mx * 100}%"></div></div><span>${n4(v)}</span></div>`).join("");
+  $("dense").innerHTML = `Dense 512: active <b>${m.dense_active}</b>/512<br>max = ${m.dense_max}<br>
+    <span class="muted">argmax Q = ${ANAME[m.q.indexOf(Math.max(...m.q))]}</span>`;
+  if (m.learn) renderEq(m); else renderEqEmpty(eqWaitReason(m), m);
+  if (m.ended) { drawRewards(); }
+  drawEps();
+}
+
+// ---------- ③ equation ----------
+function eqHead() {
+  return `<div class="line"><span class="lbl">Target (Keras)</span>y = r + γ · max<sub>a′</sub> Q(s′, a′; θ⁻) &nbsp;·&nbsp; ถ้า s′ เป็น terminal → y = −1</div>
+    <div class="line"><span class="lbl">Huber loss (δ = 1)</span>L = ½ e² ถ้า |e| ≤ 1 · มิฉะนั้น |e| − ½ &nbsp; โดย e = y − Q(s, a; θ)</div>`;
+}
+function eqWaitReason(m) {
+  if (m.mode !== "train") return "โหมดนี้ไม่ได้ train network (ไม่มีการคำนวณ loss)";
+  if (m.memory <= info.cfg.batch_size) return `replay memory มี ${m.memory} ≤ batch size ${info.cfg.batch_size} → ยังไม่ train`;
+  return `Keras train network ทุก ${info.cfg.update_after_actions} frames (frame_count % 4 == 0) → อีก ${m.timing.update_in} frame` + " · แสดงผลของรอบ train ล่าสุด";
+}
+let prevLearn = null;
+function renderEqEmpty(reason, m) {
+  if (prevLearn && m && m.mode === "train") { renderEq({ ...m, learn: prevLearn }, reason); return; }
+  $("eq").innerHTML = eqHead() + `<p class="explain">${reason}</p>`;
+}
+function renderEq(m, note) {
+  const L = m.learn; prevLearn = L;
+  const V = (c, v) => `<span class="v ${c}">${v}</span>`, g = info.cfg.gamma;
+  const yLine = L.done
+    ? `s′ เป็น terminal (เกมจบ) → y = (r + γ·max) × (1 − 1) − 1 = ${V("v-y", "−1")}`
+    : `y = ${V("v-r", L.r)} + ${V("v-g", g)} × max(${L.future.map(n4).join(", ")}) = ${V("v-r", L.r)} + ${g} × ${V("v-m", p4(L.max_future))} = ${V("v-y", n4(L.y))}`;
+  const e = L.error, huberLine = Math.abs(e) <= 1
+    ? `|e| = ${n4(Math.abs(e))} ≤ 1 → ½ e² = ½ × (${n4(e)})² = <b>${L.huber.toFixed(6)}</b>`
+    : `|e| = ${n4(Math.abs(e))} > 1 → |e| − ½ = <b>${L.huber.toFixed(6)}</b>`;
+  const mask = [0, 0, 0, 0].map((_, i) => i === L.a ? 1 : 0);
+  $("eq").innerHTML = eqHead() + `
+    <div class="sample"><figure><img class="px" src="data:image/png;base64,${L.s_img}" alt=""><figcaption>s (เฟรมล่าสุด)</figcaption></figure>
+      <figure><img class="px" src="data:image/png;base64,${L.s2_img}" alt=""><figcaption>s′ (เฟรมล่าสุด)</figcaption></figure>
+      <div class="explain" style="margin:0;font-size:13px">ตัวอย่างที่ 1 จาก ${info.cfg.batch_size} ที่สุ่มจาก replay memory (index ${L.index})<br>
+        a = <b>${ANAME[L.a]}</b> · r = <b>${L.r}</b> · done = <b>${L.done}</b></div></div>
+    <div class="line"><span class="lbl">① Target network θ⁻</span>Q(s′, ·; θ⁻) = [${L.future.map(n4).join(", ")}]</div>
+    <div class="line"><span class="lbl">② target y</span>${yLine}</div>
+    <div class="line"><span class="lbl">③ Online network θ</span>Q(s, ·; θ) = [${L.q_all.map(n4).join(", ")}] · mask one-hot(a) = [${mask}] → Q(s,a;θ) = ${V("v-q", n4(L.q_sa))}</div>
+    <div class="line"><span class="lbl">④ error</span>e = y − Q(s,a;θ) = ${n4(L.y)} − ${p4(L.q_sa)} = <b>${n4(e)}</b></div>
+    <div class="line"><span class="lbl">⑤ Huber (ตัวอย่างนี้)</span>${huberLine}</div>
+    <div class="line"><span class="lbl">⑥ Loss ของ batch</span>L(θ) = เฉลี่ย Huber ของ ${info.cfg.batch_size} ตัวอย่าง = <b>${L.loss.toFixed(6)}</b></div>
+    <div class="line"><span class="lbl">⑦ Adam + clipnorm</span>‖∇L‖ = ${L.grad_norm.toFixed(4)} ${L.grad_norm > info.cfg.clipnorm ? `> ${info.cfg.clipnorm} → ถูกย่อให้ norm = ${info.cfg.clipnorm}` : `≤ ${info.cfg.clipnorm} (ไม่ต้อง clip)`}
+      → θ ← Adam(θ, ∇L, η = ${info.cfg.learning_rate})</div>
+    <div class="line"><span class="lbl">⑧ Target network</span>θ⁻ ← θ ทุก ${info.cfg.update_target_network.toLocaleString()} frames
+      ${m.synced ? `<b class="pos">✔ sync ใน frame นี้</b>` : `<span class="muted" style="font-size:14px;font-family:system-ui">(อีก ${m.timing.target_in.toLocaleString()} frames)</span>`}</div>
+    <p class="explain">${note ? note + " · " : ""}Huber loss ทำตัวเหมือน MSE เมื่อ error เล็ก และเป็นเส้นตรงเมื่อ error ใหญ่ → gradient ไม่ระเบิดเมื่อ target เปลี่ยนมาก
+      · ช่วงแรกค่า Q มาจากน้ำหนักสุ่ม และตัวอย่าง Keras ป้อน pixel 0–255 โดยไม่ scale ค่า Q จึงสูงเกินจริง (เช่น ~9) แม้ reward ส่วนใหญ่เป็น 0 → ต้อง train นานกว่าค่าจะเข้าใกล้ผลรวม reward จริง</p>`;
+}
+
+// ---------- ④ ε schedule / ⑤ rewards ----------
+function drawEps() {
+  if (!info) return;
+  const c = $("eps-chart"), g = c.getContext("2d"), W = c.width, H = c.height, pad = 34, cfg = info.cfg;
+  const maxF = cfg.epsilon_greedy_frames * 1.2, X = f => pad + f / maxF * (W - pad - 8), Y = e => H - 24 - e * (H - 44);
+  g.clearRect(0, 0, W, H);
+  g.fillStyle = rgba(css("--warn"), .12); g.fillRect(X(0), Y(1), X(cfg.epsilon_random_frames) - X(0), Y(0) - Y(1));
+  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "11px system-ui"; g.lineWidth = 1;
+  [0, .1, .5, 1].forEach(v => { g.beginPath(); g.moveTo(pad, Y(v)); g.lineTo(W - 8, Y(v)); g.stroke(); g.fillText(v, 4, Y(v) + 4); });
+  [0, 250000, 500000, 750000, 1000000].forEach(f => g.fillText(f >= 1e6 ? "1M" : f / 1000 + "k", X(f) - 8, H - 6));
+  g.strokeStyle = css("--accent"); g.lineWidth = 2; g.beginPath();
+  g.moveTo(X(0), Y(1)); g.lineTo(X(cfg.epsilon_greedy_frames), Y(cfg.epsilon_min)); g.lineTo(X(maxF), Y(cfg.epsilon_min)); g.stroke();
+  g.fillStyle = css("--warn"); g.fillText("สุ่มล้วน", X(0) + 3, Y(1) + 14);
+  const f = Math.min(info.frame_count, maxF), e = Math.max(cfg.epsilon_min, 1 - (cfg.epsilon_max - cfg.epsilon_min) * info.frame_count / cfg.epsilon_greedy_frames);
+  g.fillStyle = css("--hl"); g.beginPath(); g.arc(X(f), Y(e), 5, 0, 2 * Math.PI); g.fill();
+  g.fillText(`ตอนนี้ ${info.frame_count.toLocaleString()} frames`, Math.min(X(f) + 8, W - 150), Y(e) - 8);
+}
+function drawRewards() {
+  if (!info) return;
+  const c = $("rew-chart"), g = c.getContext("2d"), W = c.width, H = c.height, pad = 30;
+  g.clearRect(0, 0, W, H);
+  const hs = info.history, maxR = Math.max(45, ...hs.map(h => h.reward));
+  const Y = r => H - pad - r / maxR * (H - 2 * pad), X = i => pad + (hs.length <= 1 ? 0 : i / (hs.length - 1)) * (W - pad - 8);
+  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "11px system-ui"; g.lineWidth = 1;
+  [0, Math.round(maxR / 2), Math.round(maxR)].forEach(v => { g.beginPath(); g.moveTo(pad, Y(v)); g.lineTo(W - 8, Y(v)); g.stroke(); g.fillText(v, 4, Y(v) + 4); });
+  g.strokeStyle = css("--good"); g.setLineDash([5, 4]); g.beginPath(); g.moveTo(pad, Y(40)); g.lineTo(W - 8, Y(40)); g.stroke(); g.setLineDash([]);
+  if (!hs.length) { g.fillText("ยังไม่มี episode ที่จบ (1 episode = 5 ชีวิต)", pad + 8, H / 2); return; }
+  const col = { train: "--accent", greedy: "--good", heuristic: "--pole", random: "--muted" };
+  hs.forEach((h, i) => { g.fillStyle = css(col[h.mode]); g.beginPath(); g.arc(X(i), Y(h.reward), 3, 0, 2 * Math.PI); g.fill(); });
+  const tr = hs.map((h, i) => [i, h]).filter(([, h]) => h.mode === "train");
+  if (tr.length > 1) {
+    g.strokeStyle = css("--text"); g.lineWidth = 1.5; g.beginPath();
+    tr.forEach(([i], k) => { const w = tr.slice(Math.max(0, k - 99), k + 1), avg = w.reduce((a, [, h]) => a + h.reward, 0) / w.length;
+      k ? g.lineTo(X(i), Y(avg)) : g.moveTo(X(i), Y(avg)); });
+    g.stroke();
+  }
+}
+const _rgb = {}, _cv = document.createElement("canvas").getContext("2d");
+function rgba(color, a) {
+  if (!_rgb[color]) { _cv.fillStyle = color; const n = parseInt(_cv.fillStyle.slice(1), 16); _rgb[color] = [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  const [r, g, b] = _rgb[color]; return `rgba(${r},${g},${b},${a})`;
+}
+
+// ---------- controls ----------
+["train", "greedy", "heuristic", "random"].forEach(k => $("m-" + k).onclick = () => { prevLearn = null; send({ cmd: "mode", mode: k }); });
+$("step").onclick = () => send({ cmd: "step" });
+$("play").onclick = () => send({ cmd: running ? "pause" : "play" });
+$("fps").oninput = () => { $("fps-val").textContent = $("fps").value; send({ cmd: "fps", fps: +$("fps").value }); };
+$("fast").onclick = () => send(fast ? { cmd: "pause" } : { cmd: "fast", frames: +$("fast-n").value });
+$("save").onclick = () => send({ cmd: "save" });
+$("load").onclick = () => send({ cmd: "load" });
+$("reset").onclick = () => { if (confirm("สร้าง network ใหม่ และล้าง replay memory?")) { prevLearn = null; last = null; send({ cmd: "reset" }); } };
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { drawEps(); drawRewards(); });
+connect();
+</script>
+</body>
+</html>
